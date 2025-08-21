@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mic → FLAC (ffmpeg.wasm) → Google Speech (full‑duplex v1, unofficial)</title>
+  <style>
+    :root { --fg:#111; --bg:#fff; --muted:#6b7280; --card:#f8fafc; --accent:#2563eb; --danger:#b91c1c; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans JP, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; color:var(--fg); background:var(--bg); margin:0; }
+    header { padding:18px 16px; border-bottom:1px solid #e5e7eb; display:flex; gap:12px; align-items:center; }
+    header h1 { font-size:18px; margin:0; font-weight:700; }
+    main { padding:16px; display:grid; grid-template-columns: 380px 1fr; gap:16px; }
+    .card { background:var(--card); border:1px solid #e5e7eb; border-radius:16px; padding:14px; }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .col { display:flex; flex-direction:column; gap:6px; }
+    label { font-size:12px; color:var(--muted); }
+    input[type="text"], input[type="number"], select { padding:10px 12px; border:1px solid #d1d5db; border-radius:12px; outline:none; width:100%; background:#fff; }
+    input[type="checkbox"] { transform: scale(1.1); }
+    button { padding:10px 14px; border-radius:12px; border:1px solid #d1d5db; background:#fff; cursor:pointer; }
+    button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+    button.danger { background:#fff; color:var(--danger); border-color:var(--danger); }
+    button:disabled { opacity:.6; cursor:not-allowed; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    #transcript { white-space: pre-wrap; font-size:16px; line-height:1.6; min-height:200px; }
+    #log { white-space: pre-wrap; font-size:12px; color:#111; background:#fff; border:1px dashed #e5e7eb; padding:10px; border-radius:12px; height:200px; overflow:auto; }
+    .pill { padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎙️ Mic → FLAC (ffmpeg.wasm) → Google Speech (full‑duplex v1, unofficial)</h1>
+    <span class="pill" id="status">idle</span>
+    <span class="pill" id="phase">ready</span>
+  </header>
+
+  <main>
+    <section class="card">
+      <div class="col">
+        <div class="row">
+          <button id="btnStart" class="primary">● 録音開始</button>
+          <button id="btnStop" class="danger" disabled>■ 録音停止</button>
+          <button id="btnClear">クリア</button>
+        </div>
+
+        <div class="col" style="margin-top:12px;">
+          <label>API Key（空なら Chromium 埋め込みキーを使用）</label>
+          <input id="apiKey" type="text" placeholder="AIza... (任意)" />
+        </div>
+
+        <div class="row" style="margin-top:12px; gap:12px;">
+          <div class="col" style="width:160px;">
+            <label>Language</label>
+            <input id="lang" type="text" value="ja-JP" />
+          </div>
+          <div class="col" style="width:120px;">
+            <label>max-alts</label>
+            <input id="maxAlts" type="number" min="1" max="10" value="1" />
+          </div>
+          <div class="col" style="width:140px;">
+            <label>pfilter</label>
+            <select id="pfilter">
+              <option value="0">0 (off)</option>
+              <option value="1">1 (medium)</option>
+              <option value="2" selected>2 (strict)</option>
+            </select>
+          </div>
+          <div class="col" style="width:150px;">
+            <label>sample rate (Hz)</label>
+            <input id="sampleRate" type="number" value="16000" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:8px;">
+          <label><input id="optInterim" type="checkbox" /> interim</label>
+          <label><input id="optContinuous" type="checkbox" /> continuous</label>
+          <label><input id="optSubtitle" type="checkbox" /> subtitle-mode</label>
+        </div>
+
+        <div class="col" style="margin-top:12px;">
+          <label>ログ</label>
+          <div id="log" class="mono"></div>
+        </div>
+
+        <div class="col" style="margin-top:12px;">
+          <a id="downloadFlac" hidden download="recording.flac">⬇️ 変換済みFLACをダウンロード</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="col">
+        <label>Transcript</label>
+        <div id="transcript"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="test.js"></script>
+</body>
+</html>
