@@ -12,9 +12,11 @@
     },
     "content_scripts": [
         {
-          "js": ["content.js"],
-          "matches": ["<all_urls>"],
-          "all_frames": true
+            "js": ["/content/onClick.js", "/content/appendButton.js"],
+            "css": ["/content/content.css"],
+            "run_at": "document_idle",
+            "matches": ["<all_urls>"],
+            "all_frames": true
         }
     ],
     "background":{
@@ -23,6 +25,12 @@
     },
     "permissions": ["tabs", "storage", "notifications"],
     "host_permissions": ["<all_urls>"],
+    "web_accessible_resources": [
+        {
+            "resources": ["icon.png"],
+            "matches": ["<all_urls>"]
+        }
+    ],
     "content_security_policy": {
         "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
     },

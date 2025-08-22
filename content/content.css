@@ -1,0 +1,46 @@
+/* フローティング層（ボタンを載せる専用コンテナ） */
+#tbi-layer {
+position: fixed;
+inset: 0;
+pointer-events: none; /* クリックを下へ通す（ボタン自体は pointer-events を戻す） */
+z-index: 2147483647;  /* いちばん上 */
+}
+
+/* 個々のボタン */
+.tbi-btn {
+    position: fixed;      /* ビューポート基準で配置。スクロール/リサイズ時に座標を更新 */
+    width: 25px;
+    height: 25px;
+    border: none;
+    border-radius: 9999px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    background: white;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    pointer-events: auto; /* クリック可能に戻す */
+}
+
+.tbi-btn:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+
+.tbi-btn img, .tbi-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* フォーカス中の入力には常に表示、非フォーカスはホバー時のみ */
+.tbi-hidden {
+    opacity: 0;
+    transition: opacity .12s ease;
+}
+.tbi-visible {
+    opacity: 1;
+    transition: opacity .12s ease;
+}
+
+/* 入力に被りすぎないように少し外側へ */
