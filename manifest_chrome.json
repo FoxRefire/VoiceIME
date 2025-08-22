@@ -4,7 +4,7 @@
     "version": "1.0",
     "manifest_version": 3,
     "icons": {
-        "128": "images/icon.png"
+        "128": "icon.png"
     },
     "action": {
         "default_title": "VoiceIME",
@@ -25,5 +25,5 @@
     "host_permissions": ["<all_urls>"],
     "content_security_policy": {
         "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
-    },
+    }
 }
