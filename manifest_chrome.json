@@ -12,7 +12,7 @@
     },
     "content_scripts": [
         {
-            "js": ["/content/onClick.js", "/content/appendButton.js"],
+            "js": ["/content/getMessageAndInput.js", "/content/appendButton.js"],
             "css": ["/content/content.css"],
             "run_at": "document_idle",
             "matches": ["<all_urls>"],
@@ -20,7 +20,7 @@
         }
     ],
     "background":{
-        "scripts":["background.js"],
+        "service_worker": "/background/background.js",
         "type": "module"
     },
     "permissions": ["tabs", "storage", "notifications"],
@@ -30,8 +30,5 @@
             "resources": ["icon.png"],
             "matches": ["<all_urls>"]
         }
-    ],
-    "content_security_policy": {
-        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
-    }
+    ]
 }

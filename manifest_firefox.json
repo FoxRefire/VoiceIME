@@ -12,7 +12,7 @@
     },
     "content_scripts": [
         {
-            "js": ["/content/onClick.js", "/content/appendButton.js"],
+            "js": ["/content/recordAndTranscribe.js", "/content/appendButton.js"],
             "css": ["/content/content.css"],
             "run_at": "document_idle",
             "matches": ["<all_urls>"],
@@ -20,7 +20,7 @@
         }
     ],
     "background":{
-        "scripts":["background.js"],
+        "scripts":["/background/background.js"],
         "type": "module"
     },
     "permissions": ["tabs", "storage", "notifications"],
@@ -31,9 +31,6 @@
             "matches": ["<all_urls>"]
         }
     ],
-    "content_security_policy": {
-        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
-    },
     "browser_specific_settings": {
         "gecko": {
             "id": "VoiceIME@FoxRefire"
