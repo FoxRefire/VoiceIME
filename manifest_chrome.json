@@ -12,7 +12,7 @@
     },
     "content_scripts": [
         {
-            "js": ["/content/getMessageAndInput.js", "/content/appendButton.js"],
+            "js": ["/content/recordAndTranscribe.js", "/content/appendButton.js"],
             "css": ["/content/content.css"],
             "run_at": "document_idle",
             "matches": ["<all_urls>"],
@@ -30,5 +30,8 @@
             "resources": ["icon.png"],
             "matches": ["<all_urls>"]
         }
-    ]
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+    }
 }

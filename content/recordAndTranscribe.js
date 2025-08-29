@@ -4,6 +4,10 @@ let currentPort = {
 }
 async function onButtonClick(targetEl) {
     let audio = await startRecording()
+    chrome.runtime.sendMessage({
+        action: "transcribe",
+        audio: audio
+    })
     console.log(audio)
 }
 async function startRecording() {
@@ -23,6 +27,7 @@ async function startRecording() {
         mediaRecorder.onstop = async () => {
           const blob = new Blob(chunks, { type: "audio/webm" });
           resolve(new Uint8Array(await blob.arrayBuffer()))
+          stream.getTracks().forEach(track => track.stop())
         };
       
         function checkVolume() {
