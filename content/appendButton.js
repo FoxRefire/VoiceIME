@@ -32,7 +32,7 @@ function attachButtonIfNeeded(el) {
     btn.appendChild(img);
 
     // クリックで処理
-    btn.addEventListener('click', onButtonClick);
+    btn.addEventListener('click', () => onButtonClick(el));
 
     // ホバーで表示/非表示
     let hoverTimer = null;

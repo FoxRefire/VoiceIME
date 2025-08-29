@@ -1,15 +1,12 @@
-let currentPort = {
-    key: null,
-    targetEl: null
-}
 async function onButtonClick(targetEl) {
     let audio = await startRecording()
-    chrome.runtime.sendMessage({
+    let result = await chrome.runtime.sendMessage({
         action: "transcribe",
         audio: audio
     })
-    console.log(audio)
+    targetEl.value = result
 }
+
 async function startRecording() {
     return new Promise(async resolve => {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -21,6 +18,7 @@ async function startRecording() {
         const mediaRecorder = new MediaRecorder(stream);
         let chunks = [];
         let speaking = false;
+        let initialized = false;
         let silenceTimeout;
       
         mediaRecorder.ondataavailable = e => chunks.push(e.data);
@@ -34,6 +32,14 @@ async function startRecording() {
           const data = new Uint8Array(analyser.fftSize);
           analyser.getByteTimeDomainData(data);
           const rms = Math.sqrt(data.reduce((s, v) => s + (v - 128) ** 2, 0) / data.length);
+          
+          if (rms > 0.05) {
+            if (!initialized) {
+
+              new Audio(chrome.runtime.getURL("rec.mp3")).play()
+              initialized = true
+            }
+          }
       
           if (rms > 5) { // 閾値調整
             if (!speaking) {

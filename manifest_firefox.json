@@ -27,7 +27,7 @@
     "host_permissions": ["<all_urls>"],
     "web_accessible_resources": [
         {
-            "resources": ["icon.png"],
+            "resources": ["icon.png", "rec.mp3"],
             "matches": ["<all_urls>"]
         }
     ],

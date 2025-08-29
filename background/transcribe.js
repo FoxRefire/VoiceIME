@@ -119,12 +119,7 @@
             return flacBlob;
         }
 
-        // Subtitle-like display helper
-        async function renderTranscript(text, subtitleMode) {
-            console.log(text)
-        }
-
-        function handleSpeechObject(obj, opts) {
+        function handleSpeechObject(obj, opts, resolve) {
             if (!obj || !obj.result) return;
             for (const result of obj.result) {
                 const isFinal = !!result.final;
@@ -132,7 +127,7 @@
                     const transcript = String(alt.transcript||'').trim();
                     if (!transcript) continue;
                     if (!isFinal && !opts.interim) continue; // show interim only if requested
-                    renderTranscript(transcript, opts.subtitleMode);
+                    resolve(transcript)
                 }
             }
         }
@@ -146,17 +141,18 @@
                 pair: generatePair(),
                 interim: false,
                 continuous: false,
-                subtitleMode: false,
                 maxAlts: 1,
                 pfilter: 2,
                 lang: 'ja-JP',
                 sampleRate: 16000,
             };
 
-            // Start DOWN first, then UP
-            setStatus('recognizing');
-            const downPromise = openDownStream(opts, (obj)=>handleSpeechObject(obj, opts)).catch(e=>log('DOWN error', e?.message||e));
-            await postAudioUp(opts, flac);
-            await downPromise;
-            setStatus('done');
+            return new Promise(async (resolve, reject) => {
+                // Start DOWN first, then UP
+                setStatus('recognizing');
+                const downPromise = openDownStream(opts, (obj)=>handleSpeechObject(obj, opts, resolve)).catch(e => reject(e));
+                await postAudioUp(opts, flac);
+                await downPromise;
+                setStatus('done');
+            })
         }
