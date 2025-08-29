@@ -1,3 +1,15 @@
+import { startRecording } from "/utils/recorder.js"
+import { transcribe } from "/utils/transcribe.js"
+
+const status = await navigator.permissions.query({ name: 'microphone' })
+if(status.state == "granted") {
+    document.querySelector("#granted").style.display = "block"
+    document.querySelector("#not-granted").style.display = "none"
+} else {
+    document.querySelector("#not-granted").style.display = "block"
+    document.querySelector("#granted").style.display = "none"
+}
+
 document.querySelector("#grantMic").addEventListener("click", () => {
     if(chrome.windows){
         chrome.windows.create({
@@ -9,4 +21,13 @@ document.querySelector("#grantMic").addEventListener("click", () => {
     } else {
         chrome.tabs.create({url: "popup/manager.html"})
     }
+})
+
+document.querySelector("#startRecording").addEventListener("click", async () => {
+    let audio = await startRecording()
+    let result = await chrome.runtime.sendMessage({
+        action: "transcribe",
+        audio: audio
+    })
+    chrome.tabs.create({url: "https://duckduckgo.com/?t=ffab&q=" + result})
 })
