@@ -134,6 +134,7 @@
 
         export async function transcribe(audio) {
             const flac = await toFlacWithFfmpegWasm(audio, 16000);
+            const lang = await chrome.storage.local.get("language").then(r => r.language) || navigator.language || 'en-US'
 
             // Build opts
             const opts = {
@@ -143,7 +144,7 @@
                 continuous: false,
                 maxAlts: 1,
                 pfilter: 2,
-                lang: 'ja-JP',
+                lang: lang,
                 sampleRate: 16000,
             };
 

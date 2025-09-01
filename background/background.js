@@ -10,10 +10,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
     return true
 })
-
-browser.pageAction.onClicked.addListener((tab) => {
-    browser.tabs.executeScript(tab.id, {
-      code: `alert('PageAction clicked!')`
-    });
-});
-browser.pageAction.show(tabId)
