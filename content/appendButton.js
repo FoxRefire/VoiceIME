@@ -3,10 +3,12 @@ const INPUT_SELECTOR = `input[type="text"], input[type="search"], textarea, [con
 
 // ボタンを載せる最上位レイヤ
 let layer = document.getElementById('tbi-layer');
-if (!layer) {
-    layer = document.createElement('div');
-    layer.id = 'tbi-layer';
-    document.documentElement.appendChild(layer);
+if(document instanceof HTMLDocument) {
+    if (!layer) {
+        layer = document.createElement('div');
+        layer.id = 'tbi-layer';
+        document.documentElement.appendChild(layer);
+    }
 }
 
 // 要素 -> ボタン の対応を管理
