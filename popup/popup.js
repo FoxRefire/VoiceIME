@@ -169,7 +169,12 @@ class VoiceIMEPopup {
             const searchEngine = result.searchEngine || 'duckduckgo';
             const searchUrl = this.searchEngines[searchEngine] + encodeURIComponent(this.currentResult);
             
-            chrome.tabs.create({ url: searchUrl });
+            // Get current tab to open new tab next to it
+            const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            chrome.tabs.create({ 
+                url: searchUrl,
+                index: currentTab.index + 1
+            });
         } catch (error) {
             console.error('Search failed:', error);
         }
