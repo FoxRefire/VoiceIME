@@ -26,7 +26,6 @@ export async function startRecording() {
           
           if (rms > 0.05) {
             if (!initialized) {
-
               new Audio(chrome.runtime.getURL("rec.mp3")).play()
               initialized = true
             }
@@ -38,6 +37,12 @@ export async function startRecording() {
               chunks = [];
               mediaRecorder.start();
               speaking = true;
+              
+              // Notify modal that recording has started
+              if (window.voiceimeModal) {
+                window.voiceimeModal.updateStatus('Recording...', 'recording');
+                window.voiceimeModal.updateSubtitle('Recording audio...');
+              }
             }
             clearTimeout(silenceTimeout);
             silenceTimeout = setTimeout(() => {
@@ -45,6 +50,12 @@ export async function startRecording() {
                 console.log("🛑 stop");
                 mediaRecorder.stop();
                 speaking = false;
+                
+                // Notify modal that recording has stopped
+                if (window.voiceimeModal) {
+                  window.voiceimeModal.updateStatus('Recording completed', 'completed');
+                  window.voiceimeModal.updateSubtitle('Converting speech to text...');
+                }
               }
             }, 1000); // 1秒無音で停止
           }

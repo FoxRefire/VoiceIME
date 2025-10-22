@@ -1,14 +1,14 @@
-/* フローティング層（ボタンを載せる専用コンテナ） */
+/* Floating layer (dedicated container for buttons) */
 #tbi-layer {
 position: fixed;
 inset: 0;
-pointer-events: none; /* クリックを下へ通す（ボタン自体は pointer-events を戻す） */
-z-index: 2147483647;  /* いちばん上 */
+pointer-events: none; /* Pass clicks through (buttons restore pointer-events) */
+z-index: 2147483647;  /* Topmost layer */
 }
 
-/* 個々のボタン */
+/* Individual buttons */
 .tbi-btn {
-    position: fixed;      /* ビューポート基準で配置。スクロール/リサイズ時に座標を更新 */
+    position: fixed;      /* Viewport-based positioning, coordinates updated on scroll/resize */
     width: 25px;
     height: 25px;
     border: none;
@@ -21,7 +21,7 @@ z-index: 2147483647;  /* いちばん上 */
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    pointer-events: auto; /* クリック可能に戻す */
+    pointer-events: auto; /* Restore clickability */
 }
 
 .tbi-btn:hover {
@@ -33,7 +33,7 @@ z-index: 2147483647;  /* いちばん上 */
     height: 14px;
 }
 
-/* フォーカス中の入力には常に表示、非フォーカスはホバー時のみ */
+/* Always visible for focused inputs, hover-only for non-focused */
 .tbi-hidden {
     opacity: 0;
     transition: opacity .12s ease;
@@ -43,4 +43,152 @@ z-index: 2147483647;  /* いちばん上 */
     transition: opacity .12s ease;
 }
 
-/* 入力に被りすぎないように少し外側へ */
+/* Slightly offset outward to avoid overlapping input too much */
+
+/* VoiceIME Recording Modal */
+.voiceime-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2147483648;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.voiceime-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.voiceime-modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.voiceime-modal.show .voiceime-modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.voiceime-modal-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    animation: voiceime-pulse 2s infinite;
+}
+
+.voiceime-modal-icon::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    opacity: 0.3;
+    animation: voiceime-ripple 2s infinite;
+}
+
+.voiceime-modal-icon img {
+    width: 40px;
+    height: 40px;
+    filter: brightness(0) invert(1);
+    z-index: 1;
+    position: relative;
+}
+
+.voiceime-modal-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.voiceime-modal-subtitle {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.voiceime-modal-status {
+    font-size: 14px;
+    color: #888;
+    margin-top: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.voiceime-modal-status.recording {
+    color: #e74c3c;
+    font-weight: 500;
+}
+
+.voiceime-modal-status.processing {
+    color: #f39c12;
+    font-weight: 500;
+}
+
+.voiceime-modal-status.completed {
+    color: #27ae60;
+    font-weight: 500;
+}
+
+@keyframes voiceime-pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@keyframes voiceime-ripple {
+    0% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+    100% {
+        transform: scale(1.4);
+        opacity: 0;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .voiceime-modal-content {
+        background: #1a1a1a;
+        color: white;
+    }
+    
+    .voiceime-modal-title {
+        color: white;
+    }
+    
+    .voiceime-modal-subtitle {
+        color: #ccc;
+    }
+    
+    .voiceime-modal-status {
+        color: #aaa;
+    }
+}
