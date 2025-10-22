@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceIME Settings</title>
+    <link href="/libs/material-icons/material-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/libs/materialize/materialize.min.css"/>
+    <link href="settings.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .settings-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .settings-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .settings-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        
+        .settings-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .settings-content {
+            padding: 40px;
+        }
+        
+        .setting-group {
+            margin-bottom: 40px;
+        }
+        
+        .setting-group h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 500;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        
+        .setting-item {
+            margin-bottom: 25px;
+        }
+        
+        .setting-item label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .setting-item select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            transition: border-color 0.3s ease;
+        }
+        
+        .setting-item select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .back-button:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .search-engine-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .search-engine-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .search-engine-item.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .search-engine-item input[type="radio"] {
+            margin-right: 15px;
+        }
+        
+        .search-engine-info {
+            flex: 1;
+        }
+        
+        .search-engine-name {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .search-engine-url {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .status-indicator.saved {
+            background: #4caf50;
+        }
+        
+        .status-indicator.unsaved {
+            background: #ff9800;
+        }
+        
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        
+        .toggle-checkbox {
+            display: none;
+        }
+        
+        .toggle-slider {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 24px;
+            transition: background 0.3s ease;
+            margin-right: 15px;
+        }
+        
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+        
+        .toggle-checkbox:checked + .toggle-slider {
+            background: #667eea;
+        }
+        
+        .toggle-checkbox:checked + .toggle-slider::before {
+            transform: translateX(26px);
+        }
+        
+        .toggle-text {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .setting-description {
+            font-size: 12px;
+            color: #666;
+            margin: 5px 0 0 65px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <button class="back-button" id="backButton">
+            <i class="material-icons">arrow_back</i>
+        </button>
+        
+        <div class="settings-header">
+            <h1>VoiceIME Settings</h1>
+            <p>Customize your voice input experience</p>
+        </div>
+        
+        <div class="settings-content">
+            <div class="setting-group">
+                <h3>Recognition Settings</h3>
+                <div class="setting-item">
+                    <label for="language">Recognition Language</label>
+                    <select id="language">
+                        <option value="">Auto (browser language)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="setting-group">
+                <h3>Behavior Settings</h3>
+                <div class="setting-item">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="autoSearch" class="toggle-checkbox">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-text">Auto-search after recognition</span>
+                    </label>
+                    <p class="setting-description">Automatically search the recognized text when voice recognition is complete</p>
+                </div>
+            </div>
+            
+            <div class="setting-group">
+                <h3>Search Engine Settings</h3>
+                <div id="searchEngines">
+                    <div class="search-engine-item" data-engine="duckduckgo">
+                        <input type="radio" name="searchEngine" value="duckduckgo" id="duckduckgo">
+                        <div class="search-engine-info">
+                            <div class="search-engine-name">DuckDuckGo</div>
+                            <div class="search-engine-url">duckduckgo.com</div>
+                        </div>
+                    </div>
+                    
+                    <div class="search-engine-item" data-engine="google">
+                        <input type="radio" name="searchEngine" value="google" id="google">
+                        <div class="search-engine-info">
+                            <div class="search-engine-name">Google</div>
+                            <div class="search-engine-url">google.com</div>
+                        </div>
+                    </div>
+                    
+                    <div class="search-engine-item" data-engine="bing">
+                        <input type="radio" name="searchEngine" value="bing" id="bing">
+                        <div class="search-engine-info">
+                            <div class="search-engine-name">Bing</div>
+                            <div class="search-engine-url">bing.com</div>
+                        </div>
+                    </div>
+                    
+                    <div class="search-engine-item" data-engine="yahoo">
+                        <input type="radio" name="searchEngine" value="yahoo" id="yahoo">
+                        <div class="search-engine-info">
+                            <div class="search-engine-name">Yahoo</div>
+                            <div class="search-engine-url">yahoo.com</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/libs/materialize/materialize.min.js"></script>
+    <script src="settings.js" type="module"></script>
+</body>
+</html>

@@ -1,25 +1,333 @@
-<html>
-    <head>
-        <link href="/libs/material-icons/material-icons.css" rel="stylesheet">
-        <link rel="stylesheet" href="/libs/materialize/materialize.min.css"/>
-        <link href="popup.css" rel="stylesheet">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    </head>
-    <body>
-        <div id="language-settings" style="margin-top: 12px;">
-            <label for="language">Language</label>
-            <select id="language">
-                <option value="">Auto (browser language)</option>
-            </select>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoiceIME</title>
+    <link href="/libs/material-icons/material-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="/libs/materialize/materialize.min.css"/>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .popup-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+        
+        .voiceime-logo {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .voiceime-logo img {
+            width: 50px;
+            height: 50px;
+            filter: brightness(0) invert(1);
+        }
+        
+        .status-text {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .subtitle-text {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 30px;
+        }
+        
+        .recording-indicator {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .recording-indicator.active {
+            display: flex;
+        }
+        
+        .pulse-ring {
+            width: 100px;
+            height: 100px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+        
+        .pulse-ring::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            animation: pulse 2s infinite 0.5s;
+        }
+        
+        .pulse-ring::after {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            right: -6px;
+            bottom: -6px;
+            border: 3px solid rgba(255,255,255,0.05);
+            border-radius: 50%;
+            animation: pulse 2s infinite 1s;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.2);
+                opacity: 0;
+            }
+        }
+        
+        .mic-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 30px;
+            color: white;
+        }
+        
+        .wave-animation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            margin-top: 20px;
+        }
+        
+        .wave-bar {
+            width: 4px;
+            height: 20px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 2px;
+            animation: wave 1.5s infinite ease-in-out;
+        }
+        
+        .wave-bar:nth-child(1) { animation-delay: 0s; }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+        
+        @keyframes wave {
+            0%, 40%, 100% {
+                transform: scaleY(0.4);
+            }
+            20% {
+                transform: scaleY(1);
+            }
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn-modern {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-modern:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-2px);
+        }
+        
+        .btn-modern:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: rgba(255,255,255,0.9);
+            color: #667eea;
+            border-color: rgba(255,255,255,0.9);
+        }
+        
+        .btn-primary:hover {
+            background: white;
+            color: #667eea;
+        }
+        
+        .error-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .error-state.active {
+            display: flex;
+        }
+        
+        .error-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        .settings-link {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .settings-link:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .result-display {
+            display: none;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .result-display.active {
+            display: block;
+        }
+        
+        .result-text {
+            font-size: 16px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <button class="settings-link" id="settingsButton" title="Settings">
+        <i class="material-icons">settings</i>
+    </button>
+    
+    <div class="popup-container">
+        <div class="voiceime-logo">
+            <img src="/icon.png" alt="VoiceIME">
         </div>
-        <div id="not-granted">
-            <p class="red">Microphone permission is not granted!<p>
-            <button id="grantMic" class="btn filled icon-left">Grant permission</a>
+        
+        <div class="status-text" id="statusText">Ready to listen</div>
+        <div class="subtitle-text" id="subtitleText">Click to start voice recognition</div>
+        
+        <div class="recording-indicator" id="recordingIndicator">
+            <div class="pulse-ring">
+                <i class="material-icons mic-icon">mic</i>
+            </div>
+            <div class="wave-animation">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
         </div>
-        <div id="granted">
-            <img id="startRecording" src="/icon.png" width="100" class="circle responsive-img">
-            <a href="/popup/transcriber.html" target="_blank">Open Transcriber</a>
+        
+        <div class="result-display" id="resultDisplay">
+            <div class="result-text" id="resultText"></div>
+            <div class="result-actions">
+                <button class="btn-modern" id="searchButton">
+                    <i class="material-icons">search</i>
+                    Search
+                </button>
+                <button class="btn-modern" id="copyButton">
+                    <i class="material-icons">content_copy</i>
+                    Copy
+                </button>
+            </div>
         </div>
-        <script src="./popup.js" type="module"></script>
-    </body>
+        
+        <div class="error-state" id="errorState">
+            <div class="error-icon">🎤</div>
+            <div class="error-message" id="errorMessage">Microphone permission required</div>
+            <button class="btn-modern btn-primary" id="grantMic">
+                <i class="material-icons">mic</i>
+                Grant Permission
+            </button>
+        </div>
+        
+        <div class="action-buttons" id="actionButtons">
+            <button class="btn-modern" id="startRecording">
+                <i class="material-icons">mic</i>
+                Start Recording
+            </button>
+            <a href="/popup/transcriber.html" target="_blank" class="btn-modern">
+                <i class="material-icons">open_in_new</i>
+                Transcriber
+            </a>
+        </div>
+    </div>
+    
+    <script src="/libs/materialize/materialize.min.js"></script>
+    <script src="./popup.js" type="module"></script>
+</body>
 </html>
