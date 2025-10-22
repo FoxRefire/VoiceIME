@@ -1,5 +1,16 @@
 export async function startRecording() {
     return new Promise(async resolve => {
+        // Load RMS threshold from settings
+        let rmsThreshold = 5; // Default value
+        try {
+            const result = await chrome.storage.local.get('rmsThreshold');
+            if (result.rmsThreshold !== undefined) {
+                rmsThreshold = result.rmsThreshold;
+            }
+        } catch (error) {
+            console.warn('Failed to load RMS threshold, using default:', error);
+        }
+        
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const audioContext = new AudioContext();
         const source = audioContext.createMediaStreamSource(stream);
@@ -31,7 +42,7 @@ export async function startRecording() {
             }
           }
       
-          if (rms > 5) { // 閾値調整
+          if (rms > rmsThreshold) { // Use configurable threshold
             if (!speaking) {
               console.log("🎤 start");
               chunks = [];
