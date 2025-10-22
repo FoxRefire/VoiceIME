@@ -1,5 +1,4 @@
-    // --- ffmpeg.wasm ---
-    import { FFmpeg } from "/libs/ffmpeg/ffmpeg/dist/esm/index.js"
+    import { toFlac } from "/utils/toFlac.js"
 
     // --- Constants (unofficial endpoint/key) ---
     const SERVICE_URL = 'https://www.google.com/speech-api/full-duplex/v1';
@@ -102,23 +101,6 @@
             setPhase('up:done');
         }
 
-        async function toFlacWithFfmpegWasm(audio, sampleRate=16000) {
-            setPhase('ffmpeg:loading');
-            let ffmpeg = new FFmpeg()
-            await ffmpeg.load({
-                coreURL: "/libs/ffmpeg/core/dist/esm/ffmpeg-core.js",
-            })
-            setPhase('ffmpeg:writing');
-            ffmpeg.writeFile("audio.webm", audio);
-            setPhase('ffmpeg:running');
-            // -ac 1 mono, -ar sampleRate, -compression_level 5 (reasonable), format flac
-            await ffmpeg.exec(['-i', "audio.webm", '-ac', '1', '-ar', String(sampleRate), '-compression_level', '5', '-f', 'flac', "out.flac"]);
-            setPhase('ffmpeg:reading');
-            const out = await ffmpeg.readFile("out.flac");
-            const flacBlob = new Blob([out.buffer], { type:'audio/x-flac' });
-            return flacBlob;
-        }
-
         function handleSpeechObject(obj, opts, resolve) {
             if (!obj || !obj.result) return;
             for (const result of obj.result) {
@@ -133,7 +115,8 @@
         }
 
         export async function transcribe(audio) {
-            const flac = await toFlacWithFfmpegWasm(audio, 16000);
+            console.log(audio)
+            const flac = await toFlac(audio, 16000);
             const lang = await chrome.storage.local.get("language").then(r => r.language) || navigator.language || 'en-US'
 
             // Build opts

@@ -1,5 +1,4 @@
-    // --- ffmpeg.wasm ---
-    import { FFmpeg } from "/libs/ffmpeg/ffmpeg/dist/esm/index.js"
+    import { toFlac } from "/utils/toFlac.js"
 
     // --- Constants (unofficial endpoint/key) ---
     const SERVICE_URL = 'https://www.google.com/speech-api/full-duplex/v1';
@@ -110,23 +109,6 @@
             setPhase('up:done');
         }
 
-        async function toFlacWithFfmpegWasm(webmBlob, sampleRate=16000) {
-            setPhase('ffmpeg:loading');
-            let ffmpeg = new FFmpeg()
-            await ffmpeg.load({
-                coreURL: "/libs/ffmpeg/core/dist/esm/ffmpeg-core.js",
-            })
-            setPhase('ffmpeg:writing');
-            ffmpeg.writeFile("audio.webm", new Uint8Array(await webmBlob.arrayBuffer()));
-            setPhase('ffmpeg:running');
-            // -ac 1 mono, -ar sampleRate, -compression_level 5 (reasonable), format flac
-            await ffmpeg.exec(['-i', "audio.webm", '-ac', '1', '-ar', String(sampleRate), '-compression_level', '5', '-f', 'flac', "out.flac"]);
-            setPhase('ffmpeg:reading');
-            const out = await ffmpeg.readFile("out.flac");
-            const flacBlob = new Blob([out.buffer], { type:'audio/x-flac' });
-            return flacBlob;
-        }
-
         // Subtitle-like display helper
         async function renderTranscript(text, subtitleMode) {
             const area = $('transcript');
@@ -194,7 +176,7 @@
                 log('recorded blob:', blob.type, Math.round(blob.size/1024), 'KB');
 
                 const sampleRate = Number($('sampleRate').value)||16000;
-                const flac = await toFlacWithFfmpegWasm(blob, sampleRate);
+                const flac = await toFlac(new Uint8Array(await blob.arrayBuffer()), sampleRate);
                 log('flac blob:', Math.round(flac.size/1024), 'KB');
 
                 // Expose download
