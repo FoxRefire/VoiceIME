@@ -13,6 +13,6 @@
 
 [go-gstt](https://github.com/giulianopz/go-gstt)(GPL-3.0) Core logic of querying chrome's STT API
 
-[ffmpeg.wasm](https://github.com/ffmpegwasm/ffmpeg.wasm/)(MIT) Converting audio to flac
+[libflac.js](https://github.com/mmig/libflac.js)(MIT) Converting audio to flac
 
 [Materialize](https://github.com/materializecss/materialize) App UI
