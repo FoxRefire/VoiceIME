@@ -1,7 +1,7 @@
-// 対象とする入力要素のセレクタ（必要に応じて追加/調整）
+// Selector for target input elements (add/adjust as needed)
 const INPUT_SELECTOR = `input[type="text"], input[type="search"], textarea, [contenteditable="true"]:not([type="password"])`
 
-// ボタンを載せる最上位レイヤ
+// Top layer to place buttons
 let layer = document.getElementById('tbi-layer');
 if(document instanceof HTMLDocument) {
     if (!layer) {
@@ -11,10 +11,10 @@ if(document instanceof HTMLDocument) {
     }
 }
 
-// 要素 -> ボタン の対応を管理
+// Manage element -> button mapping
 const map = new Map();
 
-// 対象要素をスキャンしてボタンを追加
+// Scan target elements and add buttons
 function scanAndAttach(root = document) {
     const els = root.querySelectorAll(INPUT_SELECTOR);
     els.forEach(attachButtonIfNeeded);
@@ -23,7 +23,7 @@ function scanAndAttach(root = document) {
 function attachButtonIfNeeded(el) {
     if (map.has(el)) return;
 
-    // ボタン生成
+    // Generate button
     const btn = Object.assign(document.createElement('button'), {
         title: 'VoiceIME',
         className: 'tbi-btn tbi-hidden'
@@ -33,10 +33,10 @@ function attachButtonIfNeeded(el) {
     })
     btn.appendChild(img);
 
-    // クリックで処理
+    // Handle click
     btn.addEventListener('click', () => onButtonClick(el));
 
-    // ホバーで表示/非表示
+    // Show/hide on hover
     let hoverTimer = null;
     function show() { btn.classList.remove('tbi-hidden'); btn.classList.add('tbi-visible'); }
     function hide() { btn.classList.remove('tbi-visible'); btn.classList.add('tbi-hidden'); }
@@ -46,26 +46,26 @@ function attachButtonIfNeeded(el) {
     btn.addEventListener('mouseenter', () => { clearTimeout(hoverTimer); show(); });
     btn.addEventListener('mouseleave', () => { hoverTimer = setTimeout(hide, 120); });
 
-    // フォーカス中は常に表示
+    // Always show when focused
     el.addEventListener('focus', show);
     el.addEventListener('blur', hide);
 
-    // レイヤに追加
+    // Add to layer
     layer.appendChild(btn);
     map.set(el, btn);
 
-    // 初回配置
+    // Initial positioning
     positionButton(el);
 
-    // 要素のサイズ・位置変化に追従
+    // Follow element size/position changes
     const ro = new ResizeObserver(() => positionButton(el));
     ro.observe(el);
-    // ビューポートスクロール/リサイズ時も追従
+    // Also follow viewport scroll/resize
     const reposition = () => positionButton(el);
     window.addEventListener('scroll', reposition, true);
     window.addEventListener('resize', reposition, true);
 
-    // 要素が DOM から消えたらクリーンアップ
+    // Clean up when element is removed from DOM
     const mo = new MutationObserver(() => {
         if (!document.contains(el)) {
             try {
@@ -81,7 +81,7 @@ function attachButtonIfNeeded(el) {
     mo.observe(document.documentElement, { childList: true, subtree: true });
 }
 
-// ボタン位置を計算（入力の右端・中央に重ねる）
+// Calculate button position (overlay on right edge, center of input)
 function positionButton(el) {
     const btn = map.get(el);
     if (!btn) return;
@@ -94,20 +94,20 @@ function positionButton(el) {
     btn.style.display = 'inline-flex';
 
     const paddingRight = parseFloat(getComputedStyle(el).paddingRight || '0');
-    const offsetX = 6; // 入力の内側に入り込み過ぎないよう外側へ
+    const offsetX = 6; // Move outward to avoid overlapping too much inside input
     const x = Math.min(rect.right - paddingRight - 6, rect.right) + offsetX;
     const y = rect.top + rect.height / 2;
 
-    // 中心合わせ
+    // Center alignment
     btn.style.left = `${x}px`;
     btn.style.top = `${y}px`;
-    btn.style.transform = 'translate(-100%, -50%)'; // 右外側に寄せる
+    btn.style.transform = 'translate(-100%, -50%)'; // Align to right outer edge
 }
 
-// 初期スキャン
+// Initial scan
 scanAndAttach();
 
-// 動的追加に対応
+// Support dynamic addition
 const observer = new MutationObserver((mutations) => {
     for (const m of mutations) {
         m.addedNodes.forEach((n) => {
@@ -116,7 +116,7 @@ const observer = new MutationObserver((mutations) => {
                 if (el.matches && el.matches(INPUT_SELECTOR)) {
                     attachButtonIfNeeded(el);
                 }
-                // 配下もスキャン
+                // Also scan children
                 el.querySelectorAll?.(INPUT_SELECTOR).forEach(attachButtonIfNeeded);
             }
         });
@@ -124,7 +124,7 @@ const observer = new MutationObserver((mutations) => {
 });
 observer.observe(document.documentElement, { childList: true, subtree: true });
 
-// ページの visibility 変化で位置をリフレッシュ
+// Refresh position on page visibility change
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
         map.forEach((_, el) => positionButton(el));
