@@ -12,7 +12,7 @@ if(document instanceof HTMLDocument) {
 }
 
 // 要素 -> ボタン の対応を管理
-const map = new WeakMap();
+const map = new Map();
 
 // 対象要素をスキャンしてボタンを追加
 function scanAndAttach(root = document) {
