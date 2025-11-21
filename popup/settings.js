@@ -101,6 +101,11 @@ class SettingsManager {
             const rmsThresholdInput = document.getElementById('rmsThreshold');
             rmsThresholdInput.value = rmsThresholdResult.rmsThreshold || 5;
             
+            // Load play start sound setting
+            const playStartSoundResult = await chrome.storage.local.get('playStartSound');
+            const playStartSoundCheckbox = document.getElementById('playStartSound');
+            playStartSoundCheckbox.checked = playStartSoundResult.playStartSound !== false; // Default to true
+            
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
@@ -136,6 +141,11 @@ class SettingsManager {
         // RMS threshold input
         document.getElementById('rmsThreshold').addEventListener('change', (e) => {
             this.saveRmsThreshold(parseFloat(e.target.value));
+        });
+        
+        // Play start sound toggle
+        document.getElementById('playStartSound').addEventListener('change', (e) => {
+            this.savePlayStartSound(e.target.checked);
         });
         
         // Search engine selection
@@ -355,6 +365,15 @@ class SettingsManager {
             this.showSaveIndicator();
         } catch (error) {
             console.error('Failed to save RMS threshold:', error);
+        }
+    }
+    
+    async savePlayStartSound(enabled) {
+        try {
+            await chrome.storage.local.set({ playStartSound: enabled });
+            this.showSaveIndicator();
+        } catch (error) {
+            console.error('Failed to save play start sound setting:', error);
         }
     }
     

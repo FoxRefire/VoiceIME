@@ -2,13 +2,17 @@ export async function startRecording() {
     return new Promise(async resolve => {
         // Load RMS threshold from settings
         let rmsThreshold = 5; // Default value
+        let playStartSound = true; // Default value
         try {
-            const result = await chrome.storage.local.get('rmsThreshold');
+            const result = await chrome.storage.local.get(['rmsThreshold', 'playStartSound']);
             if (result.rmsThreshold !== undefined) {
                 rmsThreshold = result.rmsThreshold;
             }
+            if (result.playStartSound !== undefined) {
+                playStartSound = result.playStartSound;
+            }
         } catch (error) {
-            console.warn('Failed to load RMS threshold, using default:', error);
+            console.warn('Failed to load settings, using defaults:', error);
         }
         
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -37,7 +41,10 @@ export async function startRecording() {
           
           if (rms > 0.05) {
             if (!initialized) {
-              new Audio(chrome.runtime.getURL("rec.mp3")).play()
+              // Play start sound if enabled
+              if (playStartSound) {
+                new Audio(chrome.runtime.getURL("rec.mp3")).play()
+              }
               initialized = true
               
               // Notify modal that microphone is ready
