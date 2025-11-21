@@ -104,9 +104,32 @@ class VoiceIMEPopup {
         
         try {
             this.isRecording = true;
-            this.showRecordingState();
+            
+            // Set up modal interface for recorder.js to update status
+            window.voiceimeModal = {
+                updateStatus: (status, className = '') => {
+                    this.updateStatus(status, this.getSubtitleForStatus(status));
+                    
+                    // Show recording indicator when recording starts
+                    if (status === 'Recording...') {
+                        this.showRecordingState();
+                    }
+                },
+                updateSubtitle: (subtitle) => {
+                    const subtitleEl = document.getElementById('subtitleText');
+                    if (subtitleEl) {
+                        subtitleEl.textContent = subtitle;
+                    }
+                }
+            };
+            
+            // Show preparing state
+            this.updateStatus('Preparing', 'Preparing microphone...');
             
             const audio = await startRecording();
+            
+            // Clear modal reference after recording
+            window.voiceimeModal = null;
             
             this.updateStatus('Processing...', 'Converting speech to text');
             this.showProcessingState();
@@ -121,16 +144,30 @@ class VoiceIMEPopup {
             
         } catch (error) {
             console.error('Voice recognition failed:', error);
+            window.voiceimeModal = null;
             this.showErrorState('Voice recognition failed. Please try again.');
         } finally {
             this.isRecording = false;
         }
     }
     
+    getSubtitleForStatus(status) {
+        const statusMap = {
+            'Preparing': 'Preparing microphone...',
+            'Ready': 'Microphone ready. Start speaking...',
+            'Recording...': 'Recording audio...',
+            'Recording completed': 'Converting speech to text...',
+            'Processing...': 'Converting speech to text',
+            'Completed': 'Text has been entered',
+            'Error occurred': 'Please try again'
+        };
+        return statusMap[status] || '';
+    }
+    
     showRecordingState() {
         document.getElementById('recordingIndicator').classList.add('active');
         document.getElementById('resultDisplay').classList.remove('active');
-        this.updateStatus('Listening...', 'Speak now');
+        // Status will be updated by recorder.js via window.voiceimeModal
     }
     
     showProcessingState() {

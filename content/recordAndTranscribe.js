@@ -70,8 +70,8 @@ async function onButtonClick(targetEl) {
     // Start recording with modal updates
     let {startRecording} = await import(chrome.runtime.getURL("/utils/recorder.js"))
     
-    voiceimeModal.updateStatus('Recording...', 'recording');
-    voiceimeModal.updateSubtitle('Recording audio...');
+    // Don't update to "Recording..." yet - wait for RMS > 0.05 in recorder.js
+    // The modal will be updated by recorder.js when microphone is ready
     
     let audio = await startRecording()
     

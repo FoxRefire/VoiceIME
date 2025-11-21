@@ -39,6 +39,12 @@ export async function startRecording() {
             if (!initialized) {
               new Audio(chrome.runtime.getURL("rec.mp3")).play()
               initialized = true
+              
+              // Notify modal that microphone is ready
+              if (window.voiceimeModal) {
+                window.voiceimeModal.updateStatus('Ready', 'ready');
+                window.voiceimeModal.updateSubtitle('Microphone ready. Start speaking...');
+              }
             }
           }
       
