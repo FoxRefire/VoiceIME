@@ -1,9 +1,11 @@
 import { startRecording } from "/utils/recorder.js"
+import { VoiceCommandMatcher } from "/utils/voiceCommands.js"
 
 class VoiceIMEPopup {
     constructor() {
         this.isRecording = false;
         this.currentResult = '';
+        this.voiceCommandMatcher = new VoiceCommandMatcher();
         this.searchEngines = {
             duckduckgo: 'https://duckduckgo.com/?t=ffab&q=',
             google: 'https://www.google.com/search?q=',
@@ -16,6 +18,7 @@ class VoiceIMEPopup {
     
     async init() {
         await this.checkMicrophonePermission();
+        await this.voiceCommandMatcher.loadCommands();
         this.setupEventListeners();
         
         // Auto-start recording if permission is granted
@@ -162,7 +165,29 @@ class VoiceIMEPopup {
             }
             
             this.currentResult = result;
-            this.showResult(result);
+            
+            // Check for voice command match
+            await this.voiceCommandMatcher.loadCommands(); // Reload commands in case they were updated
+            const commandMatch = this.voiceCommandMatcher.findMatch(result);
+            
+            if (commandMatch) {
+                // Execute voice command
+                this.updateStatus('Executing command...', 'Running voice command');
+                const executionResult = await this.voiceCommandMatcher.executeCommand(commandMatch);
+                
+                if (executionResult.success) {
+                    this.updateStatus('Command executed', executionResult.message || 'Voice command executed successfully');
+                    // Don't show result, just show success message
+                    setTimeout(() => {
+                        this.showMainInterface();
+                    }, 1500);
+                } else {
+                    throw new Error(executionResult.error || 'Failed to execute voice command');
+                }
+            } else {
+                // No command match, show result as usual
+                this.showResult(result);
+            }
             
         } catch (error) {
             if (isCancelled) {

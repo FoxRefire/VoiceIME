@@ -27,6 +27,8 @@ class SettingsManager {
         this.languages = {};
         this.selectedLanguage = '';
         this.isDropdownOpen = false;
+        this.voiceCommands = [];
+        this.editingCommandIndex = null;
         
         // Don't call init() here, wait for DOM
     }
@@ -106,9 +108,73 @@ class SettingsManager {
             const playStartSoundCheckbox = document.getElementById('playStartSound');
             playStartSoundCheckbox.checked = playStartSoundResult.playStartSound !== false; // Default to true
             
+            // Load voice commands
+            await this.loadVoiceCommands();
+            
         } catch (error) {
             console.error('Failed to load settings:', error);
         }
+    }
+    
+    async loadVoiceCommands() {
+        try {
+            const result = await chrome.storage.local.get('voiceCommands');
+            this.voiceCommands = result.voiceCommands || [];
+            this.renderVoiceCommands();
+        } catch (error) {
+            console.error('Failed to load voice commands:', error);
+            this.voiceCommands = [];
+        }
+    }
+    
+    renderVoiceCommands() {
+        const list = document.getElementById('voiceCommandsList');
+        if (!list) return;
+        
+        if (this.voiceCommands.length === 0) {
+            list.innerHTML = '<p style="color: #666; font-style: italic; text-align: center; padding: 20px;">No voice commands configured. Click "Add Voice Command" to create one.</p>';
+            return;
+        }
+        
+        list.innerHTML = this.voiceCommands.map((cmd, index) => {
+            const patternsText = cmd.patterns.map(p => `<code>${p}</code>`).join(', ');
+            const actionPreview = cmd.type === 'url' 
+                ? `<span style="color: #667eea;">${cmd.action}</span>`
+                : `<span style="color: #f39c12;">JavaScript code</span>`;
+            
+            return `
+                <div class="voice-command-item ${cmd.enabled === false ? 'disabled' : ''}" data-index="${index}">
+                    <div class="voice-command-header">
+                        <div class="voice-command-name">${cmd.name || 'Unnamed Command'}</div>
+                        <div class="voice-command-actions">
+                            <button class="voice-command-btn" data-action="edit" data-index="${index}">Edit</button>
+                            <button class="voice-command-btn danger" data-action="delete" data-index="${index}">Delete</button>
+                        </div>
+                    </div>
+                    <div class="voice-command-patterns">
+                        <strong>Patterns:</strong> ${patternsText}
+                    </div>
+                    <div class="voice-command-patterns">
+                        <strong>Action:</strong> ${actionPreview}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Add event listeners to buttons using event delegation
+        list.addEventListener('click', (e) => {
+            const button = e.target.closest('.voice-command-btn');
+            if (!button) return;
+            
+            const action = button.dataset.action;
+            const index = parseInt(button.dataset.index);
+            
+            if (action === 'edit') {
+                this.editVoiceCommand(index);
+            } else if (action === 'delete') {
+                this.deleteVoiceCommand(index);
+            }
+        });
     }
     
     updateLanguageDisplay() {
@@ -178,6 +244,183 @@ class SettingsManager {
                 this.closeDropdown();
             }
         });
+        
+        // Voice command management
+        this.setupVoiceCommandListeners();
+    }
+    
+    setupVoiceCommandListeners() {
+        // Add voice command button
+        const addBtn = document.getElementById('addVoiceCommand');
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                this.openVoiceCommandModal();
+            });
+        }
+        
+        // Voice command modal
+        const modal = document.getElementById('voiceCommandModal');
+        const closeBtn = document.getElementById('voiceCommandModalClose');
+        const cancelBtn = document.getElementById('voiceCommandCancel');
+        const saveBtn = document.getElementById('voiceCommandSave');
+        const typeSelect = document.getElementById('voiceCommandType');
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.closeVoiceCommandModal());
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.closeVoiceCommandModal());
+        }
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => this.saveVoiceCommand());
+        }
+        if (typeSelect) {
+            typeSelect.addEventListener('change', (e) => {
+                const urlContainer = document.getElementById('voiceCommandUrlContainer');
+                const jsContainer = document.getElementById('voiceCommandJsContainer');
+                if (e.target.value === 'url') {
+                    urlContainer.style.display = 'block';
+                    jsContainer.style.display = 'none';
+                } else {
+                    urlContainer.style.display = 'none';
+                    jsContainer.style.display = 'block';
+                }
+            });
+        }
+        
+        // Close modal when clicking outside
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.closeVoiceCommandModal();
+                }
+            });
+        }
+    }
+    
+    openVoiceCommandModal(commandIndex = null) {
+        const modal = document.getElementById('voiceCommandModal');
+        const title = document.getElementById('voiceCommandModalTitle');
+        const nameInput = document.getElementById('voiceCommandName');
+        const patternsInput = document.getElementById('voiceCommandPatterns');
+        const typeSelect = document.getElementById('voiceCommandType');
+        const urlInput = document.getElementById('voiceCommandUrl');
+        const jsInput = document.getElementById('voiceCommandJs');
+        const enabledInput = document.getElementById('voiceCommandEnabled');
+        
+        if (commandIndex !== null && this.voiceCommands[commandIndex]) {
+            // Edit mode
+            const cmd = this.voiceCommands[commandIndex];
+            title.textContent = 'Edit Voice Command';
+            nameInput.value = cmd.name || '';
+            patternsInput.value = cmd.patterns.join('\n');
+            typeSelect.value = cmd.type || 'url';
+            urlInput.value = cmd.type === 'url' ? (cmd.action || '') : '';
+            jsInput.value = cmd.type === 'javascript' ? (cmd.action || '') : '';
+            enabledInput.checked = cmd.enabled !== false;
+            this.editingCommandIndex = commandIndex;
+            
+            // Trigger type change to show/hide containers
+            typeSelect.dispatchEvent(new Event('change'));
+        } else {
+            // Add mode
+            title.textContent = 'Add Voice Command';
+            nameInput.value = '';
+            patternsInput.value = '';
+            typeSelect.value = 'url';
+            urlInput.value = '';
+            jsInput.value = '';
+            enabledInput.checked = true;
+            this.editingCommandIndex = null;
+            
+            // Trigger type change to show/hide containers
+            typeSelect.dispatchEvent(new Event('change'));
+        }
+        
+        modal.classList.add('active');
+    }
+    
+    closeVoiceCommandModal() {
+        const modal = document.getElementById('voiceCommandModal');
+        modal.classList.remove('active');
+        this.editingCommandIndex = null;
+    }
+    
+    async saveVoiceCommand() {
+        const nameInput = document.getElementById('voiceCommandName');
+        const patternsInput = document.getElementById('voiceCommandPatterns');
+        const typeSelect = document.getElementById('voiceCommandType');
+        const urlInput = document.getElementById('voiceCommandUrl');
+        const jsInput = document.getElementById('voiceCommandJs');
+        const enabledInput = document.getElementById('voiceCommandEnabled');
+        
+        const name = nameInput.value.trim();
+        const patterns = patternsInput.value.split('\n').map(p => p.trim()).filter(p => p.length > 0);
+        const type = typeSelect.value;
+        const action = type === 'url' ? urlInput.value.trim() : jsInput.value.trim();
+        const enabled = enabledInput.checked;
+        
+        // Validation
+        if (!name) {
+            alert('Please enter a command name');
+            return;
+        }
+        if (patterns.length === 0) {
+            alert('Please enter at least one voice pattern');
+            return;
+        }
+        if (!action) {
+            alert(`Please enter a ${type === 'url' ? 'URL' : 'JavaScript code'}`);
+            return;
+        }
+        
+        const command = {
+            name,
+            patterns,
+            type,
+            action,
+            enabled
+        };
+        
+        if (this.editingCommandIndex !== null) {
+            // Update existing command
+            this.voiceCommands[this.editingCommandIndex] = command;
+        } else {
+            // Add new command
+            this.voiceCommands.push(command);
+        }
+        
+        // Save to storage
+        try {
+            await chrome.storage.local.set({ voiceCommands: this.voiceCommands });
+            this.showSaveIndicator();
+            this.renderVoiceCommands();
+            this.closeVoiceCommandModal();
+        } catch (error) {
+            console.error('Failed to save voice command:', error);
+            alert('Failed to save voice command');
+        }
+    }
+    
+    editVoiceCommand(index) {
+        this.openVoiceCommandModal(index);
+    }
+    
+    async deleteVoiceCommand(index) {
+        if (!confirm('Are you sure you want to delete this voice command?')) {
+            return;
+        }
+        
+        this.voiceCommands.splice(index, 1);
+        
+        try {
+            await chrome.storage.local.set({ voiceCommands: this.voiceCommands });
+            this.showSaveIndicator();
+            this.renderVoiceCommands();
+        } catch (error) {
+            console.error('Failed to delete voice command:', error);
+            alert('Failed to delete voice command');
+        }
     }
     
     setupLanguageDropdown() {
@@ -437,6 +680,15 @@ class SettingsManager {
 document.addEventListener('DOMContentLoaded', () => {
     const settingsManager = new SettingsManager();
     settingsManager.init();
+});
+
+// Initialize settings manager when DOM is ready
+let settingsManager;
+document.addEventListener('DOMContentLoaded', () => {
+    settingsManager = new SettingsManager();
+    settingsManager.init();
+    // Make it globally accessible for inline onclick handlers
+    window.settingsManager = settingsManager;
 });
 
 // Export for potential use by other scripts
