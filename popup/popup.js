@@ -102,6 +102,9 @@ class VoiceIMEPopup {
     async startVoiceRecognition() {
         if (this.isRecording) return;
         
+        let recordingController = null;
+        let isCancelled = false;
+        
         try {
             this.isRecording = true;
             
@@ -126,7 +129,12 @@ class VoiceIMEPopup {
             // Show preparing state
             this.updateStatus('Preparing', 'Preparing microphone...');
             
-            const audio = await startRecording();
+            recordingController = startRecording();
+            const audio = await recordingController.promise;
+            
+            if (isCancelled) {
+                return;
+            }
             
             // Clear modal reference after recording
             window.voiceimeModal = null;
@@ -134,18 +142,49 @@ class VoiceIMEPopup {
             this.updateStatus('Processing...', 'Converting speech to text');
             this.showProcessingState();
             
-            const result = await chrome.runtime.sendMessage({
+            const response = await chrome.runtime.sendMessage({
                 action: "transcribe",
                 audio: audio
             });
+            
+            if (isCancelled) {
+                return;
+            }
+            
+            // Check if response indicates success
+            if (response && response.success === false) {
+                throw new Error(response.error || 'Transcription failed');
+            }
+            
+            const result = response && response.result !== undefined ? response.result : response;
+            if (!result) {
+                throw new Error('No transcription result received');
+            }
             
             this.currentResult = result;
             this.showResult(result);
             
         } catch (error) {
+            if (isCancelled) {
+                return;
+            }
             console.error('Voice recognition failed:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
             window.voiceimeModal = null;
-            this.showErrorState('Voice recognition failed. Please try again.');
+            
+            // Show more specific error message if available
+            let errorMessage = 'Voice recognition failed. Please try again.';
+            if (error.message) {
+                if (error.message.includes('cancelled')) {
+                    return; // Don't show error for user cancellation
+                }
+                errorMessage = `Error: ${error.message}`;
+            }
+            this.showErrorState(errorMessage);
         } finally {
             this.isRecording = false;
         }

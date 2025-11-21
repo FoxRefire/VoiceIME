@@ -132,11 +132,46 @@
             };
 
             return new Promise(async (resolve, reject) => {
-                // Start DOWN first, then UP
-                setStatus('recognizing');
-                const downPromise = openDownStream(opts, (obj)=>handleSpeechObject(obj, opts, resolve)).catch(e => reject(e));
-                await postAudioUp(opts, flac);
-                await downPromise;
-                setStatus('done');
+                let resolved = false;
+                
+                // Timeout after 30 seconds
+                const timeout = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        reject(new Error('Transcription timeout: No response from speech recognition service'));
+                    }
+                }, 30000);
+                
+                const handleResolve = (result) => {
+                    if (!resolved) {
+                        resolved = true;
+                        clearTimeout(timeout);
+                        resolve(result);
+                    }
+                };
+                
+                const handleReject = (error) => {
+                    if (!resolved) {
+                        resolved = true;
+                        clearTimeout(timeout);
+                        reject(error);
+                    }
+                };
+                
+                try {
+                    // Start DOWN first, then UP
+                    setStatus('recognizing');
+                    const downPromise = openDownStream(opts, (obj)=>handleSpeechObject(obj, opts, handleResolve)).catch(e => handleReject(e));
+                    await postAudioUp(opts, flac);
+                    await downPromise;
+                    setStatus('done');
+                    
+                    // If we reach here without resolving, it means no result was received
+                    if (!resolved) {
+                        handleReject(new Error('No transcription result received'));
+                    }
+                } catch (error) {
+                    handleReject(error);
+                }
             })
         }

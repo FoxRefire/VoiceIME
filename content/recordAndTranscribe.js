@@ -160,13 +160,23 @@ async function onButtonClick(targetEl) {
     voiceimeModal.updateStatus('Processing...', 'processing');
     voiceimeModal.updateSubtitle('Converting speech to text...');
     
-    let result = await chrome.runtime.sendMessage({
+    const response = await chrome.runtime.sendMessage({
       action: "transcribe",
       audio: audio
     })
     
     if (isCancelled) {
       return;
+    }
+    
+    // Check if response indicates success
+    if (response && response.success === false) {
+      throw new Error(response.error || 'Transcription failed');
+    }
+    
+    const result = response && response.result !== undefined ? response.result : response;
+    if (!result) {
+      throw new Error('No transcription result received');
     }
     
     voiceimeModal.updateStatus('Completed', 'completed');
