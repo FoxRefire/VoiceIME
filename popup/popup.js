@@ -147,7 +147,7 @@ class VoiceIMEPopup {
             
             const response = await chrome.runtime.sendMessage({
                 action: "transcribe",
-                audio: audio
+                audio: Array.from(audio)
             });
             
             if (isCancelled) {
