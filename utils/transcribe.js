@@ -1,5 +1,3 @@
-    import { toFlac } from "/utils/toFlac.js"
-
     // --- Constants (unofficial endpoint/key) ---
     const SERVICE_URL = 'https://www.google.com/speech-api/full-duplex/v1';
     const BUILT_IN_API_KEY = 'AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw'; // Chromium built-in (unofficial use)
@@ -114,9 +112,8 @@
             }
         }
 
-        export async function transcribe(audio) {
-            console.log(audio)
-            const flac = await toFlac(audio, 16000);
+        export async function transcribe(flac) {
+            console.log(flac)
             const lang = await chrome.storage.local.get("language").then(r => r.language) || navigator.language || 'en-US'
 
             // Build opts

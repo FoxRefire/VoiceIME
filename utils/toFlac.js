@@ -11,7 +11,7 @@ export async function toFlac(audio, sampleRate = 16000, channels = 1) {
     
     // 1. Create AudioContext with specified sample rate  
     const audioContext = new AudioContext({ sampleRate: sampleRate });
-    const audioBuffer = await audioContext.decodeAudioData(audio.buffer);    
+    const audioBuffer = await audioContext.decodeAudioData(audio);    
     
     // 2. Extract PCM data from AudioBuffer (Float32Array)    
     const float32Data = audioBuffer.getChannelData(0);  
