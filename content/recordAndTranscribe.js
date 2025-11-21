@@ -66,6 +66,60 @@ let voiceimeModal = null;
 // Make modal accessible globally for recorder.js
 window.voiceimeModal = null;
 
+// Helper function to insert text into different types of elements
+function insertTextIntoElement(element, text) {
+  // Check if element is contenteditable
+  if (element.isContentEditable || element.contentEditable === 'true') {
+    // Focus the element first to ensure we can work with selection
+    element.focus();
+    
+    const selection = window.getSelection();
+    let range;
+    
+    // Try to get existing selection
+    if (selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+    } else {
+      // Create a new range at the end of the element
+      range = document.createRange();
+      range.selectNodeContents(element);
+      range.collapse(false); // Collapse to end
+    }
+    
+    // Delete any existing selection
+    range.deleteContents();
+    
+    // Insert text node
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    
+    // Move cursor after inserted text
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    
+    // Trigger input event for compatibility with frameworks
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+  } else if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+    // For input and textarea elements, use value property
+    element.value = text;
+    // Trigger input event for compatibility
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+  } else {
+    // Fallback: try value property first, then textContent
+    if ('value' in element) {
+      element.value = text;
+    } else {
+      element.textContent = text;
+    }
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
 async function onButtonClick(targetEl) {
   // Initialize modal if not exists
   if (!voiceimeModal) {
@@ -119,7 +173,7 @@ async function onButtonClick(targetEl) {
     voiceimeModal.updateSubtitle('Text has been entered');
     
     // Update target element
-    targetEl.value = result
+    insertTextIntoElement(targetEl, result);
     
     // Hide modal after a short delay
     setTimeout(() => {
