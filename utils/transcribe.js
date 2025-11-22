@@ -115,6 +115,8 @@
         export async function transcribe(flac) {
             console.log(flac)
             const lang = await chrome.storage.local.get("language").then(r => r.language) || navigator.language || 'en-US'
+            const pfilterResult = await chrome.storage.local.get("pfilter");
+            const pfilter = pfilterResult.pfilter !== undefined ? pfilterResult.pfilter : 2; // Default to 2
 
             // Build opts
             const opts = {
@@ -123,7 +125,7 @@
                 interim: false,
                 continuous: false,
                 maxAlts: 1,
-                pfilter: 2,
+                pfilter: pfilter,
                 lang: lang,
                 sampleRate: 16000,
             };

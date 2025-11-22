@@ -108,6 +108,14 @@ class SettingsManager {
             const playStartSoundCheckbox = document.getElementById('playStartSound');
             playStartSoundCheckbox.checked = playStartSoundResult.playStartSound !== false; // Default to true
             
+            // Load pfilter setting
+            const pfilterResult = await chrome.storage.local.get('pfilter');
+            const pfilterSlider = document.getElementById('pfilter');
+            const pfilterValue = document.getElementById('pfilterValue');
+            const pfilterValueNum = pfilterResult.pfilter !== undefined ? pfilterResult.pfilter : 2; // Default to 2
+            pfilterSlider.value = pfilterValueNum;
+            pfilterValue.textContent = pfilterValueNum;
+            
             // Load voice commands
             await this.loadVoiceCommands();
             
@@ -212,6 +220,15 @@ class SettingsManager {
         // Play start sound toggle
         document.getElementById('playStartSound').addEventListener('change', (e) => {
             this.savePlayStartSound(e.target.checked);
+        });
+        
+        // Pfilter slider
+        const pfilterSlider = document.getElementById('pfilter');
+        const pfilterValue = document.getElementById('pfilterValue');
+        pfilterSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            pfilterValue.textContent = value;
+            this.savePfilter(value);
         });
         
         // Search engine selection
@@ -617,6 +634,15 @@ class SettingsManager {
             this.showSaveIndicator();
         } catch (error) {
             console.error('Failed to save play start sound setting:', error);
+        }
+    }
+    
+    async savePfilter(value) {
+        try {
+            await chrome.storage.local.set({ pfilter: value });
+            this.showSaveIndicator();
+        } catch (error) {
+            console.error('Failed to save pfilter setting:', error);
         }
     }
     

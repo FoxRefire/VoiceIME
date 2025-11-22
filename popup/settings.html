@@ -214,6 +214,73 @@
             line-height: 1.4;
         }
         
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 8px;
+        }
+        
+        .slider-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        
+        .slider-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 500;
+            color: #667eea;
+            font-size: 16px;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #e0e0e0;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #5568d3;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            transition: background 0.3s ease;
+        }
+        
+        input[type="range"]::-moz-range-thumb:hover {
+            background: #5568d3;
+        }
+        
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 11px;
+            color: #999;
+        }
+        
         .searchable-dropdown {
             position: relative;
             width: 100%;
@@ -569,6 +636,21 @@
                         <span class="toggle-text">Play start sound</span>
                     </label>
                     <p class="setting-description">Play a sound when the microphone is ready and voice recognition starts</p>
+                </div>
+                <div class="setting-item">
+                    <label for="pfilter">Profanity Filter</label>
+                    <div class="slider-container">
+                        <div class="slider-wrapper">
+                            <input type="range" id="pfilter" min="0" max="2" step="1" value="2">
+                            <div class="slider-labels">
+                                <span>0 (off)</span>
+                                <span>1 (medium)</span>
+                                <span>2 (strict)</span>
+                            </div>
+                        </div>
+                        <div class="slider-value" id="pfilterValue">2</div>
+                    </div>
+                    <p class="setting-description" style="margin: 5px 0 0 0; font-size: 12px; color: #666; line-height: 1.4;">Controls profanity filtering level for speech recognition results</p>
                 </div>
             </div>
             
