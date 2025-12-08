@@ -176,7 +176,7 @@
                 log('recorded blob:', blob.type, Math.round(blob.size/1024), 'KB');
 
                 const sampleRate = Number($('sampleRate').value)||16000;
-                const flac = await toFlac(new Uint8Array(await blob.arrayBuffer()), sampleRate);
+                const flac = await toFlac(await blob.arrayBuffer(), sampleRate);
                 log('flac blob:', Math.round(flac.size/1024), 'KB');
 
                 // Expose download
