@@ -754,10 +754,44 @@
                     <textarea id="voiceCommandPatterns" placeholder="ChatGPT&#10;GPT&#10;ChatGPT {remaining}" rows="4" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; transition: border-color 0.3s ease; color: black; font-family: monospace;"></textarea>
                     <p class="setting-description" style="margin-top: 5px;">Use {remaining} to capture text after the command. Example: "ChatGPT こんにちは" matches "ChatGPT {remaining}" and captures "こんにちは"</p>
                 </div>
+                <div class="setting-item">
+                    <label for="voiceCommandType">Command Type</label>
+                    <select id="voiceCommandType" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s ease; color: black;">
+                        <option value="url">Open URL</option>
+                        <option value="http">Send HTTP Request</option>
+                    </select>
+                </div>
                 <div class="setting-item" id="voiceCommandUrlContainer">
                     <label for="voiceCommandUrl">URL Template</label>
                     <input type="text" id="voiceCommandUrl" placeholder="https://chatgpt.com/?prompt={remaining}" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s ease; color: black;">
                     <p class="setting-description" style="margin-top: 5px;">Use {remaining} or {paramName} to insert captured text</p>
+                </div>
+                <div class="setting-item" id="voiceCommandHttpContainer" style="display: none;">
+                    <div class="setting-item">
+                        <label for="voiceCommandHttpMethod">HTTP Method</label>
+                        <select id="voiceCommandHttpMethod" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s ease; color: black;">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="PATCH">PATCH</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                    </div>
+                    <div class="setting-item" style="margin-top: 15px;">
+                        <label for="voiceCommandHttpUrl">URL</label>
+                        <input type="text" id="voiceCommandHttpUrl" placeholder="https://api.example.com/endpoint?param={remaining}" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s ease; color: black;">
+                        <p class="setting-description" style="margin-top: 5px;">Use {remaining} or {paramName} to insert captured text</p>
+                    </div>
+                    <div class="setting-item" style="margin-top: 15px;">
+                        <label for="voiceCommandHttpHeaders">Headers (JSON format, one per line: "Key: Value")</label>
+                        <textarea id="voiceCommandHttpHeaders" placeholder='Content-Type: application/json&#10;Authorization: Bearer {token}' rows="4" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; transition: border-color 0.3s ease; color: black; font-family: monospace;"></textarea>
+                        <p class="setting-description" style="margin-top: 5px;">Format: "Header-Name: Header-Value". Use {remaining} or {paramName} to insert captured text</p>
+                    </div>
+                    <div class="setting-item" id="voiceCommandHttpBodyContainer" style="margin-top: 15px;">
+                        <label for="voiceCommandHttpBody">Body (for POST, PUT, PATCH)</label>
+                        <textarea id="voiceCommandHttpBody" placeholder='{"text": "{remaining}", "key": "value"}' rows="6" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; transition: border-color 0.3s ease; color: black; font-family: monospace;"></textarea>
+                        <p class="setting-description" style="margin-top: 5px;">Use {remaining} or {paramName} to insert captured text</p>
+                    </div>
                 </div>
                 <div class="setting-item">
                     <label class="toggle-label">

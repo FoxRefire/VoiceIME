@@ -267,6 +267,80 @@ export class VoiceCommandMatcher {
                 });
                 
                 return { success: true, message: `Opened: ${url}` };
+            } else if (command.type === 'http') {
+                // Execute HTTP request command
+                let requestUrl = command.url || '';
+                const method = (command.method || 'GET').toUpperCase();
+                let headers = command.headers || {};
+                let body = command.body || '';
+                
+                // Replace parameters in URL
+                Object.keys(params).forEach(key => {
+                    const value = encodeURIComponent(params[key]);
+                    requestUrl = requestUrl.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+                });
+                
+                // Replace parameters in headers
+                const processedHeaders = {};
+                Object.keys(headers).forEach(headerKey => {
+                    let headerValue = headers[headerKey];
+                    Object.keys(params).forEach(key => {
+                        headerValue = headerValue.replace(new RegExp(`\\{${key}\\}`, 'g'), params[key]);
+                    });
+                    processedHeaders[headerKey] = headerValue;
+                });
+                
+                // Replace parameters in body
+                Object.keys(params).forEach(key => {
+                    const value = typeof body === 'string' ? params[key] : JSON.stringify(params[key]);
+                    body = body.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+                });
+                
+                console.log('HTTP Request:', { method, url: requestUrl, headers: processedHeaders, body });
+                
+                // Prepare fetch options
+                const fetchOptions = {
+                    method: method,
+                    headers: processedHeaders
+                };
+                
+                // Add body for methods that support it
+                if (['POST', 'PUT', 'PATCH'].includes(method) && body) {
+                    fetchOptions.body = body;
+                }
+                
+                // Send HTTP request
+                try {
+                    const response = await fetch(requestUrl, fetchOptions);
+                    const responseText = await response.text();
+                    
+                    let responseData;
+                    try {
+                        responseData = JSON.parse(responseText);
+                    } catch {
+                        responseData = responseText;
+                    }
+                    
+                    if (response.ok) {
+                        return { 
+                            success: true, 
+                            message: `HTTP ${method} request sent successfully (${response.status})`,
+                            response: responseData
+                        };
+                    } else {
+                        return { 
+                            success: false, 
+                            error: `HTTP request failed with status ${response.status}`,
+                            response: responseData
+                        };
+                    }
+                } catch (fetchError) {
+                    console.error('Fetch error:', fetchError);
+                    return { 
+                        success: false, 
+                        error: `HTTP request failed: ${fetchError.message}` 
+                    };
+                }
             }
         } catch (error) {
             console.error('Error executing voice command:', error);

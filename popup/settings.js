@@ -353,7 +353,14 @@ class SettingsManager {
         
         list.innerHTML = this.voiceCommands.map((cmd, index) => {
             const patternsText = cmd.patterns.map(p => `<code>${p}</code>`).join(', ');
-            const actionPreview = `<span style="color: #667eea;">${cmd.action}</span>`;
+            let actionPreview;
+            if (cmd.type === 'http') {
+                const method = cmd.method || 'GET';
+                const url = cmd.url || '';
+                actionPreview = `<span style="color: #667eea;"><strong>${method}</strong> ${url}</span>`;
+            } else {
+                actionPreview = `<span style="color: #667eea;">${cmd.action || cmd.url || ''}</span>`;
+            }
             
             return `
                 <div class="voice-command-item ${cmd.enabled === false ? 'disabled' : ''}" data-index="${index}">
@@ -503,6 +510,22 @@ class SettingsManager {
             saveBtn.addEventListener('click', () => this.saveVoiceCommand());
         }
         
+        // Command type change handler
+        const typeSelect = document.getElementById('voiceCommandType');
+        if (typeSelect) {
+            typeSelect.addEventListener('change', (e) => {
+                this.handleCommandTypeChange(e.target.value);
+            });
+        }
+        
+        // HTTP method change handler
+        const httpMethodSelect = document.getElementById('voiceCommandHttpMethod');
+        if (httpMethodSelect) {
+            httpMethodSelect.addEventListener('change', (e) => {
+                this.handleHttpMethodChange(e.target.value);
+            });
+        }
+        
         // Close modal when clicking outside
         if (modal) {
             modal.addEventListener('click', (e) => {
@@ -513,12 +536,39 @@ class SettingsManager {
         }
     }
     
+    handleCommandTypeChange(type) {
+        const urlContainer = document.getElementById('voiceCommandUrlContainer');
+        const httpContainer = document.getElementById('voiceCommandHttpContainer');
+        
+        if (type === 'url') {
+            urlContainer.style.display = 'block';
+            httpContainer.style.display = 'none';
+        } else if (type === 'http') {
+            urlContainer.style.display = 'none';
+            httpContainer.style.display = 'block';
+        }
+    }
+    
+    handleHttpMethodChange(method) {
+        const bodyContainer = document.getElementById('voiceCommandHttpBodyContainer');
+        if (['POST', 'PUT', 'PATCH'].includes(method)) {
+            bodyContainer.style.display = 'block';
+        } else {
+            bodyContainer.style.display = 'none';
+        }
+    }
+    
     openVoiceCommandModal(commandIndex = null) {
         const modal = document.getElementById('voiceCommandModal');
         const title = document.getElementById('voiceCommandModalTitle');
         const nameInput = document.getElementById('voiceCommandName');
         const patternsInput = document.getElementById('voiceCommandPatterns');
+        const typeSelect = document.getElementById('voiceCommandType');
         const urlInput = document.getElementById('voiceCommandUrl');
+        const httpMethodSelect = document.getElementById('voiceCommandHttpMethod');
+        const httpUrlInput = document.getElementById('voiceCommandHttpUrl');
+        const httpHeadersInput = document.getElementById('voiceCommandHttpHeaders');
+        const httpBodyInput = document.getElementById('voiceCommandHttpBody');
         const enabledInput = document.getElementById('voiceCommandEnabled');
         
         if (commandIndex !== null && this.voiceCommands[commandIndex]) {
@@ -527,17 +577,51 @@ class SettingsManager {
             title.textContent = 'Edit Voice Command';
             nameInput.value = cmd.name || '';
             patternsInput.value = cmd.patterns.join('\n');
-            urlInput.value = cmd.action || '';
+            
+            const commandType = cmd.type || 'url';
+            typeSelect.value = commandType;
+            
+            if (commandType === 'url') {
+                urlInput.value = cmd.action || '';
+            } else if (commandType === 'http') {
+                httpMethodSelect.value = cmd.method || 'GET';
+                httpUrlInput.value = cmd.url || '';
+                
+                // Convert headers object to text format
+                if (cmd.headers && typeof cmd.headers === 'object') {
+                    const headerLines = Object.entries(cmd.headers).map(([key, value]) => `${key}: ${value}`);
+                    httpHeadersInput.value = headerLines.join('\n');
+                } else {
+                    httpHeadersInput.value = '';
+                }
+                
+                httpBodyInput.value = cmd.body || '';
+            }
+            
             enabledInput.checked = cmd.enabled !== false;
             this.editingCommandIndex = commandIndex;
+            
+            // Trigger type change to show/hide containers
+            this.handleCommandTypeChange(commandType);
+            if (commandType === 'http') {
+                this.handleHttpMethodChange(cmd.method || 'GET');
+            }
         } else {
             // Add mode
             title.textContent = 'Add Voice Command';
             nameInput.value = '';
             patternsInput.value = '';
+            typeSelect.value = 'url';
             urlInput.value = '';
+            httpMethodSelect.value = 'GET';
+            httpUrlInput.value = '';
+            httpHeadersInput.value = '';
+            httpBodyInput.value = '';
             enabledInput.checked = true;
             this.editingCommandIndex = null;
+            
+            // Trigger type change to show/hide containers
+            this.handleCommandTypeChange('url');
         }
         
         modal.classList.add('active');
@@ -552,12 +636,17 @@ class SettingsManager {
     async saveVoiceCommand() {
         const nameInput = document.getElementById('voiceCommandName');
         const patternsInput = document.getElementById('voiceCommandPatterns');
+        const typeSelect = document.getElementById('voiceCommandType');
         const urlInput = document.getElementById('voiceCommandUrl');
+        const httpMethodSelect = document.getElementById('voiceCommandHttpMethod');
+        const httpUrlInput = document.getElementById('voiceCommandHttpUrl');
+        const httpHeadersInput = document.getElementById('voiceCommandHttpHeaders');
+        const httpBodyInput = document.getElementById('voiceCommandHttpBody');
         const enabledInput = document.getElementById('voiceCommandEnabled');
         
         const name = nameInput.value.trim();
         const patterns = patternsInput.value.split('\n').map(p => p.trim()).filter(p => p.length > 0);
-        const action = urlInput.value.trim();
+        const type = typeSelect.value;
         const enabled = enabledInput.checked;
         
         // Validation
@@ -569,18 +658,57 @@ class SettingsManager {
             alert('Please enter at least one voice pattern');
             return;
         }
-        if (!action) {
-            alert('Please enter a URL');
+        
+        let command;
+        
+        if (type === 'url') {
+            const action = urlInput.value.trim();
+            if (!action) {
+                alert('Please enter a URL');
+                return;
+            }
+            command = {
+                name,
+                patterns,
+                type: 'url',
+                action,
+                enabled
+            };
+        } else if (type === 'http') {
+            const url = httpUrlInput.value.trim();
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+            
+            // Parse headers
+            const headers = {};
+            const headerLines = httpHeadersInput.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            headerLines.forEach(line => {
+                const colonIndex = line.indexOf(':');
+                if (colonIndex > 0) {
+                    const key = line.substring(0, colonIndex).trim();
+                    const value = line.substring(colonIndex + 1).trim();
+                    if (key && value) {
+                        headers[key] = value;
+                    }
+                }
+            });
+            
+            command = {
+                name,
+                patterns,
+                type: 'http',
+                method: httpMethodSelect.value,
+                url,
+                headers,
+                body: httpBodyInput.value.trim(),
+                enabled
+            };
+        } else {
+            alert('Invalid command type');
             return;
         }
-        
-        const command = {
-            name,
-            patterns,
-            type: 'url',
-            action,
-            enabled
-        };
         
         if (this.editingCommandIndex !== null) {
             // Update existing command
