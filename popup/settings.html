@@ -754,22 +754,10 @@
                     <textarea id="voiceCommandPatterns" placeholder="ChatGPT&#10;GPT&#10;ChatGPT {remaining}" rows="4" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; transition: border-color 0.3s ease; color: black; font-family: monospace;"></textarea>
                     <p class="setting-description" style="margin-top: 5px;">Use {remaining} to capture text after the command. Example: "ChatGPT こんにちは" matches "ChatGPT {remaining}" and captures "こんにちは"</p>
                 </div>
-                <div class="setting-item">
-                    <label for="voiceCommandType">Command Type</label>
-                    <select id="voiceCommandType" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s ease; color: black;">
-                        <option value="url">Open URL</option>
-                        <option value="javascript">Execute JavaScript</option>
-                    </select>
-                </div>
                 <div class="setting-item" id="voiceCommandUrlContainer">
                     <label for="voiceCommandUrl">URL Template</label>
                     <input type="text" id="voiceCommandUrl" placeholder="https://chatgpt.com/?prompt={remaining}" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s ease; color: black;">
                     <p class="setting-description" style="margin-top: 5px;">Use {remaining} or {paramName} to insert captured text</p>
-                </div>
-                <div class="setting-item" id="voiceCommandJsContainer" style="display: none;">
-                    <label for="voiceCommandJs">JavaScript Code</label>
-                    <textarea id="voiceCommandJs" placeholder="fetch('https://api.example.com/action', { method: 'POST', body: JSON.stringify({ text: {remaining} }) })" rows="6" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; background: white; transition: border-color 0.3s ease; color: black; font-family: monospace;"></textarea>
-                    <p class="setting-description" style="margin-top: 5px;">Use {remaining} or {paramName} to insert captured text. The code will be executed in the background script context.</p>
                 </div>
                 <div class="setting-item">
                     <label class="toggle-label">

@@ -353,9 +353,7 @@ class SettingsManager {
         
         list.innerHTML = this.voiceCommands.map((cmd, index) => {
             const patternsText = cmd.patterns.map(p => `<code>${p}</code>`).join(', ');
-            const actionPreview = cmd.type === 'url' 
-                ? `<span style="color: #667eea;">${cmd.action}</span>`
-                : `<span style="color: #f39c12;">JavaScript code</span>`;
+            const actionPreview = `<span style="color: #667eea;">${cmd.action}</span>`;
             
             return `
                 <div class="voice-command-item ${cmd.enabled === false ? 'disabled' : ''}" data-index="${index}">
@@ -494,7 +492,6 @@ class SettingsManager {
         const closeBtn = document.getElementById('voiceCommandModalClose');
         const cancelBtn = document.getElementById('voiceCommandCancel');
         const saveBtn = document.getElementById('voiceCommandSave');
-        const typeSelect = document.getElementById('voiceCommandType');
         
         if (closeBtn) {
             closeBtn.addEventListener('click', () => this.closeVoiceCommandModal());
@@ -504,19 +501,6 @@ class SettingsManager {
         }
         if (saveBtn) {
             saveBtn.addEventListener('click', () => this.saveVoiceCommand());
-        }
-        if (typeSelect) {
-            typeSelect.addEventListener('change', (e) => {
-                const urlContainer = document.getElementById('voiceCommandUrlContainer');
-                const jsContainer = document.getElementById('voiceCommandJsContainer');
-                if (e.target.value === 'url') {
-                    urlContainer.style.display = 'block';
-                    jsContainer.style.display = 'none';
-                } else {
-                    urlContainer.style.display = 'none';
-                    jsContainer.style.display = 'block';
-                }
-            });
         }
         
         // Close modal when clicking outside
@@ -534,9 +518,7 @@ class SettingsManager {
         const title = document.getElementById('voiceCommandModalTitle');
         const nameInput = document.getElementById('voiceCommandName');
         const patternsInput = document.getElementById('voiceCommandPatterns');
-        const typeSelect = document.getElementById('voiceCommandType');
         const urlInput = document.getElementById('voiceCommandUrl');
-        const jsInput = document.getElementById('voiceCommandJs');
         const enabledInput = document.getElementById('voiceCommandEnabled');
         
         if (commandIndex !== null && this.voiceCommands[commandIndex]) {
@@ -545,27 +527,17 @@ class SettingsManager {
             title.textContent = 'Edit Voice Command';
             nameInput.value = cmd.name || '';
             patternsInput.value = cmd.patterns.join('\n');
-            typeSelect.value = cmd.type || 'url';
-            urlInput.value = cmd.type === 'url' ? (cmd.action || '') : '';
-            jsInput.value = cmd.type === 'javascript' ? (cmd.action || '') : '';
+            urlInput.value = cmd.action || '';
             enabledInput.checked = cmd.enabled !== false;
             this.editingCommandIndex = commandIndex;
-            
-            // Trigger type change to show/hide containers
-            typeSelect.dispatchEvent(new Event('change'));
         } else {
             // Add mode
             title.textContent = 'Add Voice Command';
             nameInput.value = '';
             patternsInput.value = '';
-            typeSelect.value = 'url';
             urlInput.value = '';
-            jsInput.value = '';
             enabledInput.checked = true;
             this.editingCommandIndex = null;
-            
-            // Trigger type change to show/hide containers
-            typeSelect.dispatchEvent(new Event('change'));
         }
         
         modal.classList.add('active');
@@ -580,15 +552,12 @@ class SettingsManager {
     async saveVoiceCommand() {
         const nameInput = document.getElementById('voiceCommandName');
         const patternsInput = document.getElementById('voiceCommandPatterns');
-        const typeSelect = document.getElementById('voiceCommandType');
         const urlInput = document.getElementById('voiceCommandUrl');
-        const jsInput = document.getElementById('voiceCommandJs');
         const enabledInput = document.getElementById('voiceCommandEnabled');
         
         const name = nameInput.value.trim();
         const patterns = patternsInput.value.split('\n').map(p => p.trim()).filter(p => p.length > 0);
-        const type = typeSelect.value;
-        const action = type === 'url' ? urlInput.value.trim() : jsInput.value.trim();
+        const action = urlInput.value.trim();
         const enabled = enabledInput.checked;
         
         // Validation
@@ -601,14 +570,14 @@ class SettingsManager {
             return;
         }
         if (!action) {
-            alert(`Please enter a ${type === 'url' ? 'URL' : 'JavaScript code'}`);
+            alert('Please enter a URL');
             return;
         }
         
         const command = {
             name,
             patterns,
-            type,
+            type: 'url',
             action,
             enabled
         };

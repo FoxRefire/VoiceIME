@@ -267,28 +267,6 @@ export class VoiceCommandMatcher {
                 });
                 
                 return { success: true, message: `Opened: ${url}` };
-            } else if (command.type === 'javascript') {
-                // Execute JavaScript command
-                let code = command.action;
-                
-                // Replace parameters in code
-                Object.keys(params).forEach(key => {
-                    const value = JSON.stringify(params[key]);
-                    code = code.replace(`{${key}}`, value);
-                });
-                
-                // Replace {remaining} with the remaining text
-                if (params.remaining) {
-                    code = code.replace('{remaining}', JSON.stringify(params.remaining));
-                }
-                
-                // Execute in background script context
-                const result = await chrome.runtime.sendMessage({
-                    action: 'executeScript',
-                    code: code
-                });
-                
-                return { success: true, message: result?.message || 'Command executed' };
             }
         } catch (error) {
             console.error('Error executing voice command:', error);
