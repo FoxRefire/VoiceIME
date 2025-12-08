@@ -3,21 +3,16 @@ export function startRecording() {
     let mediaRecorder = null;
     let audioContext = null;
     let source = null;
-    let analyser = null;
+    let vadNode = null;
     let silenceTimeout = null;
-    let animationFrameId = null;
     let isCancelled = false;
     
     const controller = {
         promise: new Promise(async (resolve, reject) => {
-            // Load RMS threshold from settings
-            let rmsThreshold = 5; // Default value
+            // Load settings
             let playStartSound = true; // Default value
             try {
-                const result = await chrome.storage.local.get(['rmsThreshold', 'playStartSound']);
-                if (result.rmsThreshold !== undefined) {
-                    rmsThreshold = result.rmsThreshold;
-                }
+                const result = await chrome.storage.local.get(['playStartSound']);
                 if (result.playStartSound !== undefined) {
                     playStartSound = result.playStartSound;
                 }
@@ -29,13 +24,32 @@ export function startRecording() {
                 stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 audioContext = new AudioContext();
                 source = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
+              
+                // Create analyser for RMS-based initialization check
+                const analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
                 source.connect(analyser);
+              
+                // Load VAD AudioWorkletProcessor
+                const vadWorkletUrl = chrome.runtime.getURL("/libs/vad-audio-worklet/vad-audio-worklet.js");
+                await audioContext.audioWorklet.addModule(vadWorkletUrl);
+              
+                // Create VAD node
+                vadNode = new AudioWorkletNode(audioContext, "vad", {
+                    processorOptions: {
+                        sampleRate: audioContext.sampleRate,
+                        fftSize: 128,
+                        debug: false
+                    }
+                });
+              
+                source.connect(vadNode);
               
                 mediaRecorder = new MediaRecorder(stream);
                 let chunks = [];
                 let speaking = false;
                 let initialized = false;
+                let animationFrameId = null;
               
                 mediaRecorder.ondataavailable = e => chunks.push(e.data);
                 mediaRecorder.onstop = async () => {
@@ -47,9 +61,13 @@ export function startRecording() {
                     cleanup();
                 };
               
-                function checkVolume() {
-                    if (isCancelled) {
-                        cleanup();
+                // Check RMS for initialization (microphone ready detection)
+                function checkInitialization() {
+                    if (isCancelled || initialized) {
+                        if (animationFrameId) {
+                            cancelAnimationFrame(animationFrameId);
+                            animationFrameId = null;
+                        }
                         return;
                     }
                     
@@ -57,23 +75,38 @@ export function startRecording() {
                     analyser.getByteTimeDomainData(data);
                     const rms = Math.sqrt(data.reduce((s, v) => s + (v - 128) ** 2, 0) / data.length);
                     
-                    if (rms > 0.05) {
-                        if (!initialized) {
-                            // Play start sound if enabled
-                            if (playStartSound) {
-                                new Audio(chrome.runtime.getURL("rec.mp3")).play()
-                            }
-                            initialized = true
-                            
-                            // Notify modal that microphone is ready
-                            if (window.voiceimeModal) {
-                                window.voiceimeModal.updateStatus('Ready', 'ready');
-                                window.voiceimeModal.updateSubtitle('Microphone ready. Start speaking...');
-                            }
+                    if (rms > 0.5) {
+                        // Play start sound if enabled
+                        if (playStartSound) {
+                            new Audio(chrome.runtime.getURL("rec.mp3")).play()
                         }
+                        initialized = true;
+                        
+                        // Notify modal that microphone is ready
+                        if (window.voiceimeModal) {
+                            window.voiceimeModal.updateStatus('Ready', 'ready');
+                            window.voiceimeModal.updateSubtitle('Microphone ready. Start speaking...');
+                        }
+                        
+                        // Stop checking once initialized
+                        if (animationFrameId) {
+                            cancelAnimationFrame(animationFrameId);
+                            animationFrameId = null;
+                        }
+                    } else {
+                        animationFrameId = requestAnimationFrame(checkInitialization);
                     }
-                
-                    if (rms > rmsThreshold) { // Use configurable threshold
+                }
+              
+                // Handle VAD events for speech detection
+                vadNode.port.onmessage = (event) => {
+                    if (isCancelled || !initialized) {
+                        return;
+                    }
+                    
+                    const { cmd, data } = event.data;
+                    
+                    if (cmd === "speech") {
                         if (!speaking) {
                             console.log("🎤 start");
                             chunks = [];
@@ -86,26 +119,32 @@ export function startRecording() {
                                 window.voiceimeModal.updateSubtitle('Recording audio...');
                             }
                         }
+                        
+                        // Clear silence timeout when speech is detected
                         clearTimeout(silenceTimeout);
-                        silenceTimeout = setTimeout(() => {
-                            if (speaking && !isCancelled) {
-                                console.log("🛑 stop");
-                                mediaRecorder.stop();
-                                speaking = false;
-                                
-                                // Notify modal that recording has stopped
-                                if (window.voiceimeModal) {
-                                    window.voiceimeModal.updateStatus('Recording completed', 'completed');
-                                    window.voiceimeModal.updateSubtitle('Converting speech to text...');
+                    } else if (cmd === "silence") {
+                        if (speaking) {
+                            // Set timeout to stop recording after silence
+                            clearTimeout(silenceTimeout);
+                            silenceTimeout = setTimeout(() => {
+                                if (speaking && !isCancelled) {
+                                    console.log("🛑 stop");
+                                    mediaRecorder.stop();
+                                    speaking = false;
+                                    
+                                    // Notify modal that recording has stopped
+                                    if (window.voiceimeModal) {
+                                        window.voiceimeModal.updateStatus('Recording completed', 'completed');
+                                        window.voiceimeModal.updateSubtitle('Converting speech to text...');
+                                    }
                                 }
-                            }
-                        }, 1000); // 1秒無音で停止
+                            }, 1000); // 1秒無音で停止
+                        }
                     }
+                };
                 
-                    if (!isCancelled) {
-                        animationFrameId = requestAnimationFrame(checkVolume);
-                    }
-                }
+                // Start checking for initialization
+                checkInitialization();
                 
                 function cleanup() {
                     isCancelled = true;
@@ -114,6 +153,13 @@ export function startRecording() {
                     }
                     if (animationFrameId) {
                         cancelAnimationFrame(animationFrameId);
+                    }
+                    if (vadNode) {
+                        try {
+                            vadNode.disconnect();
+                        } catch (e) {
+                            // Ignore errors when disconnecting
+                        }
                     }
                     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
                         try {
@@ -134,8 +180,6 @@ export function startRecording() {
                     cleanup();
                     reject(new Error('Recording cancelled by user'));
                 };
-                
-                checkVolume();
             } catch (error) {
                 cleanup();
                 reject(error);

@@ -98,11 +98,6 @@ class SettingsManager {
             // Update visual selection
             this.updateSearchEngineSelection(selectedEngine);
             
-            // Load RMS threshold setting
-            const rmsThresholdResult = await chrome.storage.local.get('rmsThreshold');
-            const rmsThresholdInput = document.getElementById('rmsThreshold');
-            rmsThresholdInput.value = rmsThresholdResult.rmsThreshold || 5;
-            
             // Load play start sound setting
             const playStartSoundResult = await chrome.storage.local.get('playStartSound');
             const playStartSoundCheckbox = document.getElementById('playStartSound');
@@ -210,11 +205,6 @@ class SettingsManager {
         // Auto-search toggle
         document.getElementById('autoSearch').addEventListener('change', (e) => {
             this.saveAutoSearch(e.target.checked);
-        });
-        
-        // RMS threshold input
-        document.getElementById('rmsThreshold').addEventListener('change', (e) => {
-            this.saveRmsThreshold(parseFloat(e.target.value));
         });
         
         // Play start sound toggle
@@ -616,15 +606,6 @@ class SettingsManager {
             this.showSaveIndicator();
         } catch (error) {
             console.error('Failed to save auto-search setting:', error);
-        }
-    }
-    
-    async saveRmsThreshold(threshold) {
-        try {
-            await chrome.storage.local.set({ rmsThreshold: threshold });
-            this.showSaveIndicator();
-        } catch (error) {
-            console.error('Failed to save RMS threshold:', error);
         }
     }
     
