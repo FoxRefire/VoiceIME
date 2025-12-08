@@ -145,6 +145,44 @@
             color: #666;
         }
         
+        .search-engine-actions {
+            display: flex;
+            gap: 5px;
+            margin-left: 10px;
+        }
+        
+        .btn-modern {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-modern:hover {
+            background: #e0e0e0;
+        }
+        
+        .btn-modern.btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-modern.btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-modern i {
+            font-size: 18px;
+        }
+        
         .status-indicator {
             display: inline-block;
             width: 8px;
@@ -652,37 +690,7 @@
             <div class="setting-group">
                 <h3>Search Engine Settings</h3>
                 <div id="searchEngines">
-                    <div class="search-engine-item" data-engine="duckduckgo">
-                        <input type="radio" name="searchEngine" value="duckduckgo" id="duckduckgo">
-                        <div class="search-engine-info">
-                            <div class="search-engine-name">DuckDuckGo</div>
-                            <div class="search-engine-url">duckduckgo.com</div>
-                        </div>
-                    </div>
-                    
-                    <div class="search-engine-item" data-engine="google">
-                        <input type="radio" name="searchEngine" value="google" id="google">
-                        <div class="search-engine-info">
-                            <div class="search-engine-name">Google</div>
-                            <div class="search-engine-url">google.com</div>
-                        </div>
-                    </div>
-                    
-                    <div class="search-engine-item" data-engine="bing">
-                        <input type="radio" name="searchEngine" value="bing" id="bing">
-                        <div class="search-engine-info">
-                            <div class="search-engine-name">Bing</div>
-                            <div class="search-engine-url">bing.com</div>
-                        </div>
-                    </div>
-                    
-                    <div class="search-engine-item" data-engine="yahoo">
-                        <input type="radio" name="searchEngine" value="yahoo" id="yahoo">
-                        <div class="search-engine-info">
-                            <div class="search-engine-name">Yahoo</div>
-                            <div class="search-engine-url">yahoo.com</div>
-                        </div>
-                    </div>
+                    <!-- Search engines will be rendered dynamically -->
                 </div>
             </div>
             
@@ -696,6 +704,33 @@
                     </button>
                     <div id="voiceCommandsList"></div>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custom Search Engine Modal -->
+    <div id="customEngineModal" class="voice-command-modal">
+        <div class="voice-command-modal-content">
+            <div class="voice-command-modal-header">
+                <h2 id="customEngineModalTitle">Add Custom Search Engine</h2>
+                <button class="voice-command-modal-close" id="customEngineModalClose">
+                    <i class="material-icons">close</i>
+                </button>
+            </div>
+            <div class="voice-command-modal-body">
+                <div class="setting-item">
+                    <label for="customEngineName">Search Engine Name</label>
+                    <input type="text" id="customEngineName" placeholder="e.g., My Custom Search" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s ease; color: black;">
+                </div>
+                <div class="setting-item">
+                    <label for="customEngineUrl">Search URL Template</label>
+                    <input type="text" id="customEngineUrl" placeholder="https://example.com/search?q={q}" style="width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px; background: white; transition: border-color 0.3s ease; color: black;">
+                    <p class="setting-description" style="margin-top: 5px;">Use {q} as a placeholder for the search query. Example: https://example.com/search?q={q}</p>
+                </div>
+            </div>
+            <div class="voice-command-modal-footer">
+                <button class="btn-modern" id="customEngineCancel">Cancel</button>
+                <button class="btn-modern btn-primary" id="customEngineSave">Save</button>
             </div>
         </div>
     </div>

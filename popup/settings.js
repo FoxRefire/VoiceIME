@@ -16,19 +16,16 @@ class SettingsManager {
                 name: 'Bing',
                 url: 'https://www.bing.com/search?q=',
                 icon: '🔍'
-            },
-            yahoo: {
-                name: 'Yahoo',
-                url: 'https://search.yahoo.com/search?p=',
-                icon: '🔍'
             }
         };
         
+        this.customSearchEngines = [];
         this.languages = {};
         this.selectedLanguage = '';
         this.isDropdownOpen = false;
         this.voiceCommands = [];
         this.editingCommandIndex = null;
+        this.editingCustomEngineIndex = null;
         
         // Don't call init() here, wait for DOM
     }
@@ -42,6 +39,7 @@ class SettingsManager {
         }
         
         await this.loadLanguages();
+        await this.loadCustomSearchEngines();
         await this.loadSettings();
         this.setupEventListeners();
     }
@@ -89,15 +87,6 @@ class SettingsManager {
             const searchEngineResult = await chrome.storage.local.get('searchEngine');
             const selectedEngine = searchEngineResult.searchEngine || 'duckduckgo';
             
-            // Update radio buttons
-            const radioButtons = document.querySelectorAll('input[name="searchEngine"]');
-            radioButtons.forEach(radio => {
-                radio.checked = radio.value === selectedEngine;
-            });
-            
-            // Update visual selection
-            this.updateSearchEngineSelection(selectedEngine);
-            
             // Load play start sound setting
             const playStartSoundResult = await chrome.storage.local.get('playStartSound');
             const playStartSoundCheckbox = document.getElementById('playStartSound');
@@ -114,8 +103,231 @@ class SettingsManager {
             // Load voice commands
             await this.loadVoiceCommands();
             
+            // Render search engines (must be done after loading custom engines)
+            this.renderSearchEngines();
+            
+            // Update search engine selection after rendering
+            this.updateSearchEngineSelection(selectedEngine);
+            
         } catch (error) {
             console.error('Failed to load settings:', error);
+        }
+    }
+    
+    async loadCustomSearchEngines() {
+        try {
+            const result = await chrome.storage.local.get('customSearchEngines');
+            this.customSearchEngines = result.customSearchEngines || [];
+        } catch (error) {
+            console.error('Failed to load custom search engines:', error);
+            this.customSearchEngines = [];
+        }
+    }
+    
+    renderSearchEngines() {
+        const container = document.getElementById('searchEngines');
+        if (!container) return;
+        
+        // Clear existing content
+        container.innerHTML = '';
+        
+        // Render default search engines
+        Object.entries(this.searchEngines).forEach(([key, engine]) => {
+            const item = this.createSearchEngineItem(key, engine.name, engine.url, false);
+            container.appendChild(item);
+        });
+        
+        // Render custom search engines
+        this.customSearchEngines.forEach((engine, index) => {
+            const item = this.createSearchEngineItem(`custom_${index}`, engine.name, engine.url, true, index);
+            container.appendChild(item);
+        });
+        
+        // Add "Add Custom Engine" button
+        const addButton = document.createElement('button');
+        addButton.className = 'btn-modern btn-primary';
+        addButton.style.cssText = 'margin-top: 15px; width: 100%;';
+        addButton.innerHTML = '<i class="material-icons">add</i> Add Custom Search Engine';
+        addButton.addEventListener('click', () => this.openCustomEngineModal());
+        container.appendChild(addButton);
+    }
+    
+    createSearchEngineItem(engineId, name, url, isCustom = false, customIndex = null) {
+        const item = document.createElement('div');
+        item.className = 'search-engine-item';
+        item.dataset.engine = engineId;
+        
+        const radioId = `searchEngine_${engineId}`;
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'searchEngine';
+        radio.value = engineId;
+        radio.id = radioId;
+        
+        const info = document.createElement('div');
+        info.className = 'search-engine-info';
+        
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'search-engine-name';
+        nameDiv.textContent = name;
+        
+        const urlDiv = document.createElement('div');
+        urlDiv.className = 'search-engine-url';
+        urlDiv.textContent = this.extractDomain(url);
+        
+        info.appendChild(nameDiv);
+        info.appendChild(urlDiv);
+        
+        item.appendChild(radio);
+        item.appendChild(info);
+        
+        if (isCustom) {
+            const actions = document.createElement('div');
+            actions.className = 'search-engine-actions';
+            actions.style.cssText = 'display: flex; gap: 5px; margin-left: 10px;';
+            
+            const editBtn = document.createElement('button');
+            editBtn.className = 'voice-command-btn';
+            editBtn.innerHTML = 'Edit';
+            editBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openCustomEngineModal(customIndex);
+            });
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'voice-command-btn danger';
+            deleteBtn.innerHTML = 'Delete';
+            deleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm('Are you sure you want to delete this custom search engine?')) {
+                    await this.deleteCustomEngine(customIndex);
+                }
+            });
+            
+            actions.appendChild(editBtn);
+            actions.appendChild(deleteBtn);
+            item.appendChild(actions);
+        }
+        
+        item.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-engine-actions')) {
+                this.selectSearchEngine(engineId);
+            }
+        });
+        
+        return item;
+    }
+    
+    extractDomain(url) {
+        try {
+            const urlObj = new URL(url);
+            return urlObj.hostname.replace('www.', '');
+        } catch {
+            return url;
+        }
+    }
+    
+    async deleteCustomEngine(index) {
+        this.customSearchEngines.splice(index, 1);
+        await chrome.storage.local.set({ customSearchEngines: this.customSearchEngines });
+        this.showSaveIndicator();
+        this.renderSearchEngines();
+        
+        // If deleted engine was selected, switch to default
+        const result = await chrome.storage.local.get('searchEngine');
+        const selectedEngine = result.searchEngine || 'duckduckgo';
+        if (selectedEngine.startsWith('custom_')) {
+            const customIndex = parseInt(selectedEngine.replace('custom_', ''));
+            if (customIndex >= this.customSearchEngines.length) {
+                await this.selectSearchEngine('duckduckgo');
+            }
+        }
+    }
+    
+    openCustomEngineModal(index = null) {
+        const modal = document.getElementById('customEngineModal');
+        const nameInput = document.getElementById('customEngineName');
+        const urlInput = document.getElementById('customEngineUrl');
+        const title = document.getElementById('customEngineModalTitle');
+        
+        if (index !== null && this.customSearchEngines[index]) {
+            // Edit mode
+            const engine = this.customSearchEngines[index];
+            title.textContent = 'Edit Custom Search Engine';
+            nameInput.value = engine.name || '';
+            urlInput.value = engine.url || '';
+            this.editingCustomEngineIndex = index;
+        } else {
+            // Add mode
+            title.textContent = 'Add Custom Search Engine';
+            nameInput.value = '';
+            urlInput.value = '';
+            this.editingCustomEngineIndex = null;
+        }
+        
+        modal.classList.add('active');
+    }
+    
+    closeCustomEngineModal() {
+        const modal = document.getElementById('customEngineModal');
+        modal.classList.remove('active');
+        this.editingCustomEngineIndex = null;
+    }
+    
+    async saveCustomEngine() {
+        const nameInput = document.getElementById('customEngineName');
+        const urlInput = document.getElementById('customEngineUrl');
+        
+        const name = nameInput.value.trim();
+        const url = urlInput.value.trim();
+        
+        // Validation
+        if (!name) {
+            alert('Please enter a search engine name');
+            return;
+        }
+        if (!url) {
+            alert('Please enter a search URL');
+            return;
+        }
+        
+        // Validate URL format
+        try {
+            new URL(url);
+        } catch {
+            alert('Please enter a valid URL');
+            return;
+        }
+        
+        // Check if URL contains a query parameter placeholder
+        if (!url.includes('{q}') && !url.includes('{query}')) {
+            if (!confirm('The URL does not contain {q} or {query} placeholder. The search query will be appended to the URL. Continue?')) {
+                return;
+            }
+        }
+        
+        const engine = {
+            name,
+            url: url.replace('{query}', '{q}') // Normalize to {q}
+        };
+        
+        if (this.editingCustomEngineIndex !== null) {
+            // Update existing engine
+            this.customSearchEngines[this.editingCustomEngineIndex] = engine;
+        } else {
+            // Add new engine
+            this.customSearchEngines.push(engine);
+        }
+        
+        // Save to storage
+        try {
+            await chrome.storage.local.set({ customSearchEngines: this.customSearchEngines });
+            this.showSaveIndicator();
+            this.renderSearchEngines();
+            this.closeCustomEngineModal();
+        } catch (error) {
+            console.error('Failed to save custom search engine:', error);
+            alert('Failed to save custom search engine');
         }
     }
     
@@ -221,24 +433,36 @@ class SettingsManager {
             this.savePfilter(value);
         });
         
-        // Search engine selection
-        const searchEngineItems = document.querySelectorAll('.search-engine-item');
-        searchEngineItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const engine = item.dataset.engine;
-                this.selectSearchEngine(engine);
-            });
+        // Radio button changes (handled in renderSearchEngines now)
+        document.addEventListener('change', (e) => {
+            if (e.target.name === 'searchEngine' && e.target.checked) {
+                this.selectSearchEngine(e.target.value);
+            }
         });
         
-        // Radio button changes
-        const radioButtons = document.querySelectorAll('input[name="searchEngine"]');
-        radioButtons.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    this.selectSearchEngine(e.target.value);
+        // Custom search engine modal
+        const customEngineModal = document.getElementById('customEngineModal');
+        const customEngineCloseBtn = document.getElementById('customEngineModalClose');
+        const customEngineCancelBtn = document.getElementById('customEngineCancel');
+        const customEngineSaveBtn = document.getElementById('customEngineSave');
+        
+        if (customEngineCloseBtn) {
+            customEngineCloseBtn.addEventListener('click', () => this.closeCustomEngineModal());
+        }
+        if (customEngineCancelBtn) {
+            customEngineCancelBtn.addEventListener('click', () => this.closeCustomEngineModal());
+        }
+        if (customEngineSaveBtn) {
+            customEngineSaveBtn.addEventListener('click', () => this.saveCustomEngine());
+        }
+        
+        if (customEngineModal) {
+            customEngineModal.addEventListener('click', (e) => {
+                if (e.target === customEngineModal) {
+                    this.closeCustomEngineModal();
                 }
             });
-        });
+        }
         
         // Back button
         document.getElementById('backButton').addEventListener('click', () => {
@@ -652,8 +876,12 @@ class SettingsManager {
         searchEngineItems.forEach(item => {
             if (item.dataset.engine === selectedEngine) {
                 item.classList.add('selected');
+                const radio = item.querySelector('input[type="radio"]');
+                if (radio) radio.checked = true;
             } else {
                 item.classList.remove('selected');
+                const radio = item.querySelector('input[type="radio"]');
+                if (radio) radio.checked = false;
             }
         });
     }

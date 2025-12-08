@@ -9,9 +9,9 @@ class VoiceIMEPopup {
         this.searchEngines = {
             duckduckgo: 'https://duckduckgo.com/?t=ffab&q=',
             google: 'https://www.google.com/search?q=',
-            bing: 'https://www.bing.com/search?q=',
-            yahoo: 'https://search.yahoo.com/search?p='
+            bing: 'https://www.bing.com/search?q='
         };
+        this.customSearchEngines = [];
         
         this.init();
     }
@@ -19,6 +19,7 @@ class VoiceIMEPopup {
     async init() {
         await this.checkMicrophonePermission();
         await this.voiceCommandMatcher.loadCommands();
+        await this.loadCustomSearchEngines();
         this.setupEventListeners();
         
         // Auto-start recording if permission is granted
@@ -26,6 +27,16 @@ class VoiceIMEPopup {
             setTimeout(() => {
                 this.startVoiceRecognition();
             }, 500); // Small delay for UI to settle
+        }
+    }
+    
+    async loadCustomSearchEngines() {
+        try {
+            const result = await chrome.storage.local.get('customSearchEngines');
+            this.customSearchEngines = result.customSearchEngines || [];
+        } catch (error) {
+            console.error('Failed to load custom search engines:', error);
+            this.customSearchEngines = [];
         }
     }
     
@@ -265,10 +276,34 @@ class VoiceIMEPopup {
         if (!this.currentResult) return;
         
         try {
+            // Reload custom search engines in case they were updated
+            await this.loadCustomSearchEngines();
+            
             // Get selected search engine from storage
             const result = await chrome.storage.local.get('searchEngine');
             const searchEngine = result.searchEngine || 'duckduckgo';
-            const searchUrl = this.searchEngines[searchEngine] + encodeURIComponent(this.currentResult);
+            
+            let searchUrl;
+            
+            // Check if it's a custom search engine
+            if (searchEngine.startsWith('custom_')) {
+                const customIndex = parseInt(searchEngine.replace('custom_', ''));
+                if (this.customSearchEngines[customIndex]) {
+                    const customEngine = this.customSearchEngines[customIndex];
+                    const encodedQuery = encodeURIComponent(this.currentResult);
+                    searchUrl = customEngine.url.replace('{q}', encodedQuery);
+                    // If no {q} placeholder, append query to URL
+                    if (!customEngine.url.includes('{q}')) {
+                        searchUrl = customEngine.url + encodedQuery;
+                    }
+                } else {
+                    // Fallback to default if custom engine not found
+                    searchUrl = this.searchEngines['duckduckgo'] + encodeURIComponent(this.currentResult);
+                }
+            } else {
+                // Default search engine
+                searchUrl = this.searchEngines[searchEngine] + encodeURIComponent(this.currentResult);
+            }
             
             // Get current tab to open new tab next to it
             const [currentTab] = await chrome.tabs.query({ active: true, currentWindow: true });
