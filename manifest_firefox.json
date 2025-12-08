@@ -38,5 +38,13 @@
         "gecko": {
             "id": "VoiceIME@FoxRefire"
         }
+    },
+    "commands": {
+        "open-popup": {
+            "suggested_key": {
+                "default": "Alt+Z"
+            },
+            "description": "Open VoiceIME popup"
+        }
     }
 }

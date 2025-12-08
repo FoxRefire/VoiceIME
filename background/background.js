@@ -30,6 +30,13 @@ function arrayToBlob(array) {
     return new Blob([new Uint8Array(array)], { type: 'audio/flac' });
 }
 
+// Handle keyboard shortcut command
+chrome.commands.onCommand.addListener((command) => {
+    if (command === "open-popup") {
+        chrome.action.openPopup();
+    }
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "transcribe") {
         console.log(message.audio)
